@@ -1,15 +1,11 @@
 // ===== IMPORTAR FIREBASE =====
-import { guardarCita, obtenerHorasOcupadas, guardarResena, obtenerResenas } from './firebase.js'
-
-// ===== TURNOS POR DÍA =====
-const turnosSabado = [
-  '2:00 PM', '2:40 PM', '3:20 PM', '4:00 PM', '4:40 PM',
-  '5:20 PM', '6:00 PM', '6:40 PM', '7:20 PM', '8:00 PM'
-]
-const turnosDomingo = [
-  '9:00 AM', '9:40 AM', '10:20 AM', '11:00 AM', '11:40 AM',
-  '12:20 PM', '1:00 PM', '1:40 PM', '2:20 PM'
-]
+import {
+  guardarCita, obtenerHorasOcupadas, guardarResena, obtenerResenas,
+  obtenerCitasPorTelefono, obtenerTodasLasCitas, obtenerCitasPorFecha,
+  obtenerIngresosUltimos7Dias, obtenerStatsDia, actualizarEstadoCita,
+  iniciarSesionAdmin, sesionAdminActiva, cerrarSesionAdmin,
+  CONFIG_SLOTS
+} from './firebase.js'
 
 // ===== PRECIOS =====
 const preciosServicios = {
@@ -20,10 +16,14 @@ const preciosServicios = {
   'Experiencia Gold': 45000
 }
 
-// ===== ESTADO =====
+// ===== ESTADO GLOBAL =====
 let fechaSeleccionada = null
 let horaSeleccionada = null
 let estrellaSeleccionada = 0
+let sesionCliente = null       // { nombre, telefono }
+let fechaDash = new Date()     // fecha activa en dashboard
+let fechaAgenda = new Date()   // fecha activa en agenda
+let todasCitas = []            // cache de citas para el tab de todas
 
 // ===== DATOS SERVICIOS =====
 const servicios = {
@@ -79,8 +79,447 @@ const servicios = {
   }
 }
 
-// ===== MODALES =====
-window.abrirServicio = function(id) {
+// ================================================================
+// NAVBAR — HAMBURGER
+// ================================================================
+window.toggleMenu = function () {
+  const menu = document.getElementById('nav-menu')
+  const btn = document.getElementById('nav-hamburger')
+  menu.classList.toggle('abierto')
+  btn.classList.toggle('abierto')
+}
+
+window.cerrarMenu = function () {
+  document.getElementById('nav-menu').classList.remove('abierto')
+  document.getElementById('nav-hamburger').classList.remove('abierto')
+}
+
+// Cierra menú al hacer clic fuera
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('nav-menu')
+  const btn = document.getElementById('nav-hamburger')
+  if (!menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.classList.remove('abierto')
+    btn.classList.remove('abierto')
+  }
+})
+
+// ================================================================
+// MODAL SESIÓN — ABRIR / CERRAR
+// ================================================================
+window.abrirSesion = function () {
+  // Si admin activo, abrir panel directo
+  if (sesionAdminActiva()) { abrirPanelAdmin(); return }
+  // Si cliente activo, mostrar perfil
+  if (sesionCliente) {
+    mostrarPerfilCliente()
+  } else {
+    mostrarLoginCliente()
+  }
+  document.getElementById('modal-sesion').classList.add('abierto')
+  document.body.style.overflow = 'hidden'
+}
+
+window.cerrarSesion = function () {
+  document.getElementById('modal-sesion').classList.remove('abierto')
+  document.body.style.overflow = ''
+}
+
+function mostrarVista(id) {
+  ;['vista-login', 'vista-login-admin', 'vista-cliente'].forEach(v => {
+    document.getElementById(v).style.display = v === id ? 'block' : 'none'
+  })
+}
+
+window.mostrarLoginCliente = function () { mostrarVista('vista-login') }
+window.mostrarLoginAdmin = function () {
+  document.getElementById('admin-password').value = ''
+  document.getElementById('admin-error').style.display = 'none'
+  mostrarVista('vista-login-admin')
+}
+
+// ================================================================
+// LOGIN CLIENTE
+// ================================================================
+window.loginCliente = function () {
+  const nombre = document.getElementById('login-nombre').value.trim()
+  const telefono = document.getElementById('login-telefono').value.trim()
+  const errorEl = document.getElementById('login-error')
+
+  if (!nombre) {
+    errorEl.textContent = '⚠️ Ingresa tu nombre'
+    errorEl.style.display = 'block'
+    return
+  }
+  if (!telefono.startsWith('3') || telefono.length !== 10) {
+    errorEl.textContent = '⚠️ Número inválido (debe empezar por 3 y tener 10 dígitos)'
+    errorEl.style.display = 'block'
+    return
+  }
+  errorEl.style.display = 'none'
+  sesionCliente = { nombre, telefono }
+  localStorage.setItem('eb_cliente', JSON.stringify(sesionCliente))
+  actualizarBadgeSesion()
+  mostrarPerfilCliente()
+}
+
+async function mostrarPerfilCliente () {
+  mostrarVista('vista-cliente')
+  document.getElementById('cliente-bienvenida').textContent = `Hola, ${sesionCliente.nombre.split(' ')[0]}! ✂️`
+  const lista = document.getElementById('citas-cliente-lista')
+  lista.innerHTML = '<p class="cargando">Cargando tus citas...</p>'
+  lista.className = 'citas-cliente-lista'
+
+  const citas = await obtenerCitasPorTelefono(sesionCliente.telefono)
+
+  if (!citas || citas.length === 0) {
+    lista.innerHTML = '<p class="citas-vacio">No tienes citas registradas aún.</p>'
+    return
+  }
+
+  lista.innerHTML = ''
+  citas.forEach(c => {
+    const fechaFmt = c.fecha
+      ? new Date(c.fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
+      : '—'
+    const chipClass = `estado-chip-${c.estado || 'pendiente'}`
+    const card = document.createElement('div')
+    card.className = `cita-cliente-card estado-${c.estado || 'pendiente'}`
+    card.innerHTML = `
+      <p class="cita-cliente-fecha">${fechaFmt}</p>
+      <p class="cita-cliente-servicio">${c.servicio}${c.adiciones && c.adiciones.length ? ' + Adiciones' : ''}</p>
+      <p class="cita-cliente-hora">🕐 ${c.hora || '—'} · 📍 ${c.ubicacion || '—'}</p>
+      ${c.total ? `<p class="cita-cliente-hora">💰 $${c.total.toLocaleString()}</p>` : ''}
+      <span class="cita-cliente-estado ${chipClass}">${c.estado || 'pendiente'}</span>
+    `
+    lista.appendChild(card)
+  })
+}
+
+window.logoutCliente = function () {
+  sesionCliente = null
+  localStorage.removeItem('eb_cliente')
+  actualizarBadgeSesion()
+  cerrarSesion()
+}
+
+function actualizarBadgeSesion () {
+  const badge = document.getElementById('nav-sesion-badge')
+  const btnSesion = document.getElementById('btn-sesion')
+  const activo = sesionCliente || sesionAdminActiva()
+  badge.style.display = activo ? 'block' : 'none'
+  btnSesion.classList.toggle('activo', !!activo)
+}
+
+// ================================================================
+// LOGIN ADMIN
+// ================================================================
+window.loginAdmin = function () {
+  const pass = document.getElementById('admin-password').value
+  const errorEl = document.getElementById('admin-error')
+  if (iniciarSesionAdmin(pass)) {
+    cerrarSesion()
+    actualizarBadgeSesion()
+    abrirPanelAdmin()
+  } else {
+    errorEl.textContent = '⚠️ Contraseña incorrecta'
+    errorEl.style.display = 'block'
+    document.getElementById('admin-password').value = ''
+  }
+}
+
+// Enter en campo contraseña
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('admin-password').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') window.loginAdmin()
+  })
+})
+
+// ================================================================
+// PANEL ADMIN
+// ================================================================
+function abrirPanelAdmin () {
+  document.getElementById('panel-admin').style.display = 'block'
+  document.body.style.overflow = 'hidden'
+  fechaDash = new Date()
+  fechaAgenda = new Date()
+  cambiarTab('dashboard')
+}
+
+window.cerrarPanelAdmin = function () {
+  cerrarSesionAdmin()
+  actualizarBadgeSesion()
+  document.getElementById('panel-admin').style.display = 'none'
+  document.body.style.overflow = ''
+}
+
+window.cambiarTab = function (tab) {
+  ;['dashboard', 'agenda', 'citas'].forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none'
+  })
+  document.querySelectorAll('.admin-tab').forEach((btn, i) => {
+    btn.classList.toggle('activo', ['dashboard', 'agenda', 'citas'][i] === tab)
+  })
+  if (tab === 'dashboard') cargarDashboard()
+  if (tab === 'agenda') cargarAgenda()
+  if (tab === 'citas') cargarTodasCitas()
+}
+
+// ================================================================
+// DASHBOARD
+// ================================================================
+async function cargarDashboard () {
+  const fechaStr = fechaDash.toISOString().split('T')[0]
+  const hoyStr = new Date().toISOString().split('T')[0]
+
+  // Texto fecha
+  document.getElementById('admin-fecha-texto').textContent =
+    fechaDash.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
+
+  // Stats
+  const stats = await obtenerStatsDia(fechaStr)
+  if (stats) {
+    document.getElementById('stat-ocupacion').textContent = `${stats.ocupacion}%`
+    document.getElementById('stat-ocupacion-barra').style.width = `${stats.ocupacion}%`
+    document.getElementById('stat-slots').textContent =
+      stats.slotsDia > 0 ? `${stats.totalCitas} de ${stats.slotsDia} slots` : 'Día sin turnos'
+    document.getElementById('stat-citas-dia').textContent =
+      `${stats.totalCitas} / ${stats.slotsDia || '—'}`
+    document.getElementById('stat-citas-barra').style.width =
+      stats.slotsDia > 0 ? `${(stats.totalCitas / stats.slotsDia) * 100}%` : '0%'
+    document.getElementById('stat-ingresos-dia').textContent =
+      `$${stats.ingresosDia.toLocaleString()} hoy`
+
+    // Lista citas del día
+    const contenedor = document.getElementById('admin-citas-hoy')
+    contenedor.innerHTML = ''
+    if (stats.citas.length === 0) {
+      contenedor.innerHTML = '<p class="admin-vacio">Sin citas para este día</p>'
+    } else {
+      stats.citas.forEach(c => {
+        const row = document.createElement('div')
+        row.className = 'admin-cita-row'
+        row.innerHTML = `
+          <span class="admin-cita-hora">${c.hora || '—'}</span>
+          <div class="admin-cita-info">
+            <p class="admin-cita-nombre">${c.nombre}</p>
+            <p class="admin-cita-servicio">${c.servicio}${c.adiciones && c.adiciones.length ? ` + ${c.adiciones.length} adición(es)` : ''}</p>
+          </div>
+          <span class="admin-cita-total">$${(c.total || 0).toLocaleString()}</span>
+        `
+        contenedor.appendChild(row)
+      })
+    }
+  }
+
+  // Gráfica de ingresos
+  const datos7 = await obtenerIngresosUltimos7Dias()
+  renderGrafica(datos7, hoyStr)
+}
+
+function renderGrafica (datos, hoyStr) {
+  const contenedor = document.getElementById('admin-grafica')
+  contenedor.innerHTML = ''
+  const maxVal = Math.max(...datos.map(d => d.total), 1)
+  datos.forEach(d => {
+    const altura = Math.max((d.total / maxVal) * 85, d.total > 0 ? 8 : 4)
+    const esHoy = d.fecha === hoyStr
+    const wrap = document.createElement('div')
+    wrap.className = 'grafica-barra-wrap'
+    wrap.innerHTML = `
+      <span class="grafica-valor">${d.total > 0 ? '$' + Math.round(d.total / 1000) + 'k' : ''}</span>
+      <div class="grafica-barra${esHoy ? ' hoy' : ''}" style="height:${altura}px"></div>
+      <span class="grafica-etiqueta">${d.etiqueta}${esHoy ? ' ●' : ''}</span>
+    `
+    contenedor.appendChild(wrap)
+  })
+}
+
+window.cambiarFechaDash = function (delta) {
+  fechaDash.setDate(fechaDash.getDate() + delta)
+  cargarDashboard()
+}
+
+// ================================================================
+// AGENDA
+// ================================================================
+async function cargarAgenda () {
+  const fechaStr = fechaAgenda.toISOString().split('T')[0]
+  document.getElementById('agenda-fecha-texto').textContent =
+    fechaAgenda.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+  const timeline = document.getElementById('agenda-timeline')
+  timeline.innerHTML = '<p class="cargando">Cargando agenda...</p>'
+
+  const diaSemana = fechaAgenda.getDay()
+  const turnos = diaSemana === 6
+    ? CONFIG_SLOTS.sabado.turnos
+    : diaSemana === 0
+      ? CONFIG_SLOTS.domingo.turnos
+      : []
+
+  const citas = await obtenerCitasPorFecha(fechaStr)
+  const citasPorHora = {}
+  citas.forEach(c => { citasPorHora[c.hora] = c })
+
+  timeline.innerHTML = ''
+
+  if (turnos.length === 0) {
+    timeline.innerHTML = '<p class="admin-vacio">Este día no tiene turnos configurados.</p>'
+    return
+  }
+
+  turnos.forEach((turno, idx) => {
+    const cita = citasPorHora[turno]
+    const slot = document.createElement('div')
+    slot.className = 'agenda-slot'
+
+    const lineaHtml = `
+      <div class="agenda-slot-linea">
+        <div class="agenda-slot-punto" style="background:${cita ? estadoColor(cita.estado) : '#1e3a52'}"></div>
+        ${idx < turnos.length - 1 ? '<div class="agenda-slot-linea-v"></div>' : ''}
+      </div>
+    `
+
+    if (cita) {
+      slot.innerHTML = `
+        <span class="agenda-slot-hora">${turno}</span>
+        ${lineaHtml}
+        <div class="agenda-cita-card estado-${cita.estado || 'pendiente'}">
+          <p class="agenda-cita-nombre">${cita.nombre}</p>
+          <p class="agenda-cita-servicio">${cita.servicio}${cita.adiciones && cita.adiciones.length ? ` · ${cita.adiciones.join(', ')}` : ''}</p>
+          <div class="agenda-cita-meta">
+            <span class="agenda-cita-total">$${(cita.total || 0).toLocaleString()}</span>
+            <select class="agenda-estado-select" data-id="${cita.id}" onchange="cambiarEstadoCita(this)">
+              <option value="pendiente" ${cita.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+              <option value="confirmada" ${cita.estado === 'confirmada' ? 'selected' : ''}>Confirmada</option>
+              <option value="completada" ${cita.estado === 'completada' ? 'selected' : ''}>Completada</option>
+              <option value="cancelada" ${cita.estado === 'cancelada' ? 'selected' : ''}>Cancelada</option>
+            </select>
+          </div>
+          <p style="font-size:11px;color:#5d8aa8;margin-top:4px;">📱 ${cita.telefono || '—'}</p>
+        </div>
+      `
+    } else {
+      slot.innerHTML = `
+        <span class="agenda-slot-hora">${turno}</span>
+        ${lineaHtml}
+        <div class="agenda-slot-libre">
+          <span class="agenda-slot-libre-txt">Disponible</span>
+        </div>
+      `
+    }
+    timeline.appendChild(slot)
+  })
+}
+
+function estadoColor (estado) {
+  const colores = {
+    pendiente: '#2471a3',
+    confirmada: '#f39c12',
+    completada: '#27ae60',
+    cancelada: '#e74c3c'
+  }
+  return colores[estado] || '#1e3a52'
+}
+
+window.cambiarFechaAgenda = function (delta) {
+  fechaAgenda.setDate(fechaAgenda.getDate() + delta)
+  cargarAgenda()
+}
+
+window.cambiarEstadoCita = async function (select) {
+  const id = select.dataset.id
+  const nuevoEstado = select.value
+  select.disabled = true
+  const resultado = await actualizarEstadoCita(id, nuevoEstado)
+  select.disabled = false
+  if (resultado.exito) {
+    // Actualizar color del card visualmente
+    const card = select.closest('.agenda-cita-card')
+    if (card) {
+      card.className = `agenda-cita-card estado-${nuevoEstado}`
+    }
+  } else {
+    alert('Error al actualizar el estado.')
+    cargarAgenda()
+  }
+}
+
+// ================================================================
+// TODAS LAS CITAS
+// ================================================================
+async function cargarTodasCitas () {
+  const lista = document.getElementById('todas-citas-lista')
+  lista.innerHTML = '<p class="cargando">Cargando citas...</p>'
+  todasCitas = await obtenerTodasLasCitas()
+  renderTodasCitas()
+
+  document.getElementById('filtro-estado').onchange = renderTodasCitas
+}
+
+function renderTodasCitas () {
+  const lista = document.getElementById('todas-citas-lista')
+  const filtro = document.getElementById('filtro-estado').value
+  const filtradas = filtro ? todasCitas.filter(c => c.estado === filtro) : todasCitas
+
+  if (filtradas.length === 0) {
+    lista.innerHTML = '<p class="admin-vacio">No hay citas con este filtro.</p>'
+    return
+  }
+
+  lista.innerHTML = ''
+  filtradas.forEach(c => {
+    const fechaFmt = c.fecha
+      ? new Date(c.fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+      : '—'
+    const card = document.createElement('div')
+    card.className = `admin-cita-card-full estado-${c.estado || 'pendiente'}`
+    card.innerHTML = `
+      <div class="admin-cita-card-header">
+        <span class="admin-cita-card-nombre">${c.nombre}</span>
+        <span class="admin-cita-card-fecha">${fechaFmt} · ${c.hora || '—'}</span>
+      </div>
+      <div class="admin-cita-card-body">
+        Servicio: <span>${c.servicio}</span><br>
+        ${c.adiciones && c.adiciones.length ? `Adiciones: <span>${c.adiciones.join(', ')}</span><br>` : ''}
+        WhatsApp: <span>${c.telefono || '—'}</span><br>
+        Ubicación: <span>${c.ubicacion || '—'}</span>
+      </div>
+      <div class="admin-cita-card-footer">
+        <span class="admin-cita-card-total">$${(c.total || 0).toLocaleString()}</span>
+        <select class="agenda-estado-select" data-id="${c.id}" onchange="cambiarEstadoDesdeListado(this)">
+          <option value="pendiente" ${c.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+          <option value="confirmada" ${c.estado === 'confirmada' ? 'selected' : ''}>Confirmada</option>
+          <option value="completada" ${c.estado === 'completada' ? 'selected' : ''}>Completada</option>
+          <option value="cancelada" ${c.estado === 'cancelada' ? 'selected' : ''}>Cancelada</option>
+        </select>
+      </div>
+    `
+    lista.appendChild(card)
+  })
+}
+
+window.cambiarEstadoDesdeListado = async function (select) {
+  const id = select.dataset.id
+  const nuevoEstado = select.value
+  select.disabled = true
+  const resultado = await actualizarEstadoCita(id, nuevoEstado)
+  select.disabled = false
+  if (resultado.exito) {
+    const card = select.closest('.admin-cita-card-full')
+    if (card) card.className = `admin-cita-card-full estado-${nuevoEstado}`
+    const cita = todasCitas.find(c => c.id === id)
+    if (cita) cita.estado = nuevoEstado
+  } else {
+    alert('Error al actualizar el estado.')
+  }
+}
+
+// ================================================================
+// MODALES DE SERVICIOS
+// ================================================================
+window.abrirServicio = function (id) {
   const s = servicios[id]
   if (!s) return
   document.getElementById('modal-icono').textContent = s.icono
@@ -98,12 +537,15 @@ window.abrirServicio = function(id) {
   document.body.style.overflow = 'hidden'
 }
 
-window.cerrarModal = function() {
+window.cerrarModal = function () {
   document.getElementById('modal-servicio').classList.remove('abierto')
   document.body.style.overflow = ''
 }
 
-window.abrirCitas = function() {
+// ================================================================
+// MODAL CITAS
+// ================================================================
+window.abrirCitas = function () {
   fechaSeleccionada = null
   horaSeleccionada = null
   document.getElementById('modal-citas').classList.add('abierto')
@@ -113,39 +555,44 @@ window.abrirCitas = function() {
   document.getElementById('boton-agendar').style.display = 'none'
 }
 
-window.cerrarCitas = function() {
+window.cerrarCitas = function () {
   document.getElementById('modal-citas').classList.remove('abierto')
   document.body.style.overflow = ''
 }
 
-window.abrirResena = function() {
+// ================================================================
+// MODAL RESEÑA
+// ================================================================
+window.abrirResena = function () {
   estrellaSeleccionada = 0
   document.querySelectorAll('.estrella-btn').forEach(e => e.classList.remove('activa'))
   document.getElementById('modal-resena').classList.add('abierto')
   document.body.style.overflow = 'hidden'
 }
 
-window.cerrarResena = function() {
+window.cerrarResena = function () {
   document.getElementById('modal-resena').classList.remove('abierto')
   document.body.style.overflow = ''
 }
 
-// ===== TOTAL =====
-function calcularTotal() {
+// ================================================================
+// TOTAL DE CITA
+// ================================================================
+function calcularTotal () {
   const servicioSeleccionado = document.getElementById('cita-servicio').value
   const precioBase = preciosServicios[servicioSeleccionado] || 0
   let totalAdiciones = 0
   const adicionesSeleccionadas = []
   document.querySelectorAll('.adicion-checkbox:checked').forEach(cb => {
-    const nombre = cb.dataset.nombre
-    const precio = parseInt(cb.dataset.precio)
-    totalAdiciones += precio
-    adicionesSeleccionadas.push(`${nombre} ($${precio.toLocaleString()})`)
+    totalAdiciones += parseInt(cb.dataset.precio)
+    adicionesSeleccionadas.push(`${cb.dataset.nombre} ($${parseInt(cb.dataset.precio).toLocaleString()})`)
   })
-  return { total: precioBase + totalAdiciones, adicionesSeleccionadas }
+  const ubicacion = document.getElementById('cita-ubicacion').value
+  const domicilio = ubicacion === 'A domicilio (+$8.000)' ? 8000 : 0
+  return { total: precioBase + totalAdiciones + domicilio, adicionesSeleccionadas }
 }
 
-function actualizarTotal() {
+function actualizarTotal () {
   const { total } = calcularTotal()
   const boton = document.getElementById('boton-agendar')
   if (boton.style.display !== 'none') {
@@ -155,8 +602,10 @@ function actualizarTotal() {
   }
 }
 
-// ===== CALENDARIO =====
-function renderCalendario() {
+// ================================================================
+// CALENDARIO
+// ================================================================
+function renderCalendario () {
   const contenedor = document.getElementById('calendario')
   contenedor.innerHTML = ''
   const hoy = new Date()
@@ -180,7 +629,7 @@ function renderCalendario() {
   }
 }
 
-async function seleccionarFecha(fechaStr, diaSemana, elemento) {
+async function seleccionarFecha (fechaStr, diaSemana, elemento) {
   document.querySelectorAll('.cal-dia').forEach(d => d.classList.remove('seleccionado'))
   elemento.classList.add('seleccionado')
   fechaSeleccionada = fechaStr
@@ -190,7 +639,7 @@ async function seleccionarFecha(fechaStr, diaSemana, elemento) {
   contenedorHoras.innerHTML = '<p class="cargando">Cargando horas disponibles...</p>'
   document.getElementById('seccion-horas').style.display = 'block'
   const horasOcupadas = await obtenerHorasOcupadas(fechaStr)
-  const turnos = diaSemana === 6 ? turnosSabado : turnosDomingo
+  const turnos = diaSemana === 6 ? CONFIG_SLOTS.sabado.turnos : CONFIG_SLOTS.domingo.turnos
   const ahora = new Date()
   const esHoy = fechaStr === ahora.toISOString().split('T')[0]
   contenedorHoras.innerHTML = ''
@@ -221,7 +670,7 @@ async function seleccionarFecha(fechaStr, diaSemana, elemento) {
   })
 }
 
-function seleccionarHora(hora, elemento) {
+function seleccionarHora (hora, elemento) {
   document.querySelectorAll('.hora-btn').forEach(b => b.classList.remove('seleccionada'))
   elemento.classList.add('seleccionada')
   horaSeleccionada = hora
@@ -229,12 +678,14 @@ function seleccionarHora(hora, elemento) {
   actualizarTotal()
 }
 
-// ===== RESEÑAS =====
-function renderEstrellas(numero) {
+// ================================================================
+// RESEÑAS
+// ================================================================
+function renderEstrellas (numero) {
   return '★'.repeat(numero) + '☆'.repeat(5 - numero)
 }
 
-async function cargarResenas() {
+async function cargarResenas () {
   const resenas = await obtenerResenas()
   const gridResenas = document.getElementById('resenas-grid')
   const promedioNum = document.getElementById('promedio-numero')
@@ -251,7 +702,6 @@ async function cargarResenas() {
   promedioNum.textContent = promedio
   promedioEst.textContent = renderEstrellas(Math.round(promedio))
   promedioTotal.textContent = `${resenas.length} reseña${resenas.length > 1 ? 's' : ''}`
-
   gridResenas.innerHTML = ''
   resenas.forEach(r => {
     const card = document.createElement('div')
@@ -263,72 +713,52 @@ async function cargarResenas() {
     `
     gridResenas.appendChild(card)
   })
-
-  // Duplicar para loop infinito
   gridResenas.innerHTML += gridResenas.innerHTML
 
-  // Carrusel con touch y mouse
+  // Carrusel touch + mouse
   const carrusel = gridResenas.parentElement
-
-  let isDragging = false
-  let startX = 0
-  let scrollLeft = 0
-
+  let isDragging = false, startX = 0, scrollLeft = 0
   carrusel.addEventListener('touchstart', e => {
-    isDragging = true
-    startX = e.touches[0].pageX
-    scrollLeft = carrusel.scrollLeft
+    isDragging = true; startX = e.touches[0].pageX; scrollLeft = carrusel.scrollLeft
     gridResenas.style.animationPlayState = 'paused'
   }, { passive: true })
-
-  carrusel.addEventListener('touchend', () => {
-    isDragging = false
-    gridResenas.style.animationPlayState = 'running'
-  })
-
+  carrusel.addEventListener('touchend', () => { isDragging = false; gridResenas.style.animationPlayState = 'running' })
   carrusel.addEventListener('touchmove', e => {
     if (!isDragging) return
-    const x = e.touches[0].pageX
-    const walk = (x - startX) * 1.5
-    carrusel.scrollLeft = scrollLeft - walk
+    carrusel.scrollLeft = scrollLeft - (e.touches[0].pageX - startX) * 1.5
   }, { passive: true })
-
   carrusel.addEventListener('mousedown', e => {
-    isDragging = true
-    startX = e.pageX - carrusel.offsetLeft
-    scrollLeft = carrusel.scrollLeft
-    gridResenas.style.animationPlayState = 'paused'
-    carrusel.style.cursor = 'grabbing'
+    isDragging = true; startX = e.pageX - carrusel.offsetLeft; scrollLeft = carrusel.scrollLeft
+    gridResenas.style.animationPlayState = 'paused'; carrusel.style.cursor = 'grabbing'
   })
-
-  carrusel.addEventListener('mouseup', () => {
-    isDragging = false
-    gridResenas.style.animationPlayState = 'running'
-    carrusel.style.cursor = 'grab'
-  })
-
-  carrusel.addEventListener('mouseleave', () => {
-    isDragging = false
-    gridResenas.style.animationPlayState = 'running'
-    carrusel.style.cursor = 'grab'
-  })
-
+  carrusel.addEventListener('mouseup', () => { isDragging = false; gridResenas.style.animationPlayState = 'running'; carrusel.style.cursor = 'grab' })
+  carrusel.addEventListener('mouseleave', () => { isDragging = false; gridResenas.style.animationPlayState = 'running'; carrusel.style.cursor = 'grab' })
   carrusel.addEventListener('mousemove', e => {
     if (!isDragging) return
-    const x = e.pageX - carrusel.offsetLeft
-    const walk = (x - startX) * 1.5
-    carrusel.scrollLeft = scrollLeft - walk
+    carrusel.scrollLeft = scrollLeft - (e.pageX - carrusel.offsetLeft - startX) * 1.5
   })
 }
 
-// ===== LÓGICA PRINCIPAL =====
+// ================================================================
+// LÓGICA PRINCIPAL — DOMContentLoaded
+// ================================================================
 document.addEventListener('DOMContentLoaded', () => {
+
+  // Restaurar sesión cliente de localStorage
+  const clienteGuardado = localStorage.getItem('eb_cliente')
+  if (clienteGuardado) {
+    try { sesionCliente = JSON.parse(clienteGuardado) } catch (e) { sesionCliente = null }
+  }
+  actualizarBadgeSesion()
+
+  // Si admin tenía sesión activa (sessionStorage persiste mientras el tab esté abierto)
+  if (sesionAdminActiva()) actualizarBadgeSesion()
 
   cargarResenas()
 
-  // Estrellas
+  // Estrellas reseña
   document.querySelectorAll('.estrella-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
+    btn.addEventListener('click', function () {
       estrellaSeleccionada = parseInt(this.dataset.valor)
       document.querySelectorAll('.estrella-btn').forEach((b, i) => {
         b.classList.toggle('activa', i < estrellaSeleccionada)
@@ -337,7 +767,7 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 
   // Envío reseña
-  document.getElementById('form-resena').addEventListener('submit', async function(e) {
+  document.getElementById('form-resena').addEventListener('submit', async function (e) {
     e.preventDefault()
     if (estrellaSeleccionada === 0) {
       document.getElementById('error-estrellas').textContent = '⚠️ Selecciona una puntuación'
@@ -348,13 +778,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const boton = document.getElementById('boton-resena')
     boton.textContent = 'Enviando...'
     boton.disabled = true
-    const datos = {
+    const resultado = await guardarResena({
       nombre: document.getElementById('resena-nombre').value,
       estrellas: estrellaSeleccionada,
       comentario: document.getElementById('resena-comentario').value,
       aprobada: false
-    }
-    const resultado = await guardarResena(datos)
+    })
     if (resultado.exito) {
       cerrarResena()
       this.reset()
@@ -367,16 +796,14 @@ document.addEventListener('DOMContentLoaded', () => {
     boton.disabled = false
   })
 
-  // Validación teléfono
-  const inputTelefono = document.getElementById('cita-telefono')
-  inputTelefono.addEventListener('input', function() {
-    const valor = this.value
+  // Validación teléfono citas
+  document.getElementById('cita-telefono').addEventListener('input', function () {
     const errorMsg = document.getElementById('error-telefono')
-    if (valor.length > 0 && valor[0] !== '3') {
+    if (this.value.length > 0 && this.value[0] !== '3') {
       this.style.borderColor = '#c0392b'
       errorMsg.innerHTML = '⚠️ El número debe empezar por 3'
       errorMsg.style.display = 'block'
-    } else if (valor.startsWith('3') && valor.length < 10) {
+    } else if (this.value.startsWith('3') && this.value.length < 10) {
       this.style.borderColor = '#c0392b'
       errorMsg.innerHTML = '⚠️ El número debe tener 10 dígitos'
       errorMsg.style.display = 'block'
@@ -387,36 +814,23 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 
   // Bloquear adiciones según servicio
-  document.getElementById('cita-servicio').addEventListener('change', function() {
-    const valor = this.value
-    const incluyeBarba = valor === 'Corte + Barba'
-    const incluyeCejas = valor === 'Corte + Cejas'
-    const incluyeMasaje = valor === 'Corte + Masaje'
-    const incluyeTodo = valor === 'Experiencia Gold'
-
+  document.getElementById('cita-servicio').addEventListener('change', function () {
+    const v = this.value
     const checkBarba = document.querySelector('[data-nombre="Barba"]')
     const checkCejas = document.querySelector('[data-nombre="Cejas"]')
     const checkMask = document.querySelector('[data-nombre="Black Mask Nasal"]')
     const checkOcular = document.querySelector('[data-nombre="Masaje Ocular"]')
-
-    function bloquear(checkbox, condicion) {
-      const item = checkbox.closest('.adicion-item')
-      if (condicion) {
-        checkbox.checked = false
-        checkbox.disabled = true
-        item.style.opacity = '0.3'
-        item.style.pointerEvents = 'none'
-      } else {
-        checkbox.disabled = false
-        item.style.opacity = '1'
-        item.style.pointerEvents = 'auto'
-      }
+    function bloquear (cb, cond) {
+      const item = cb.closest('.adicion-item')
+      cb.checked = cond ? false : cb.checked
+      cb.disabled = cond
+      item.style.opacity = cond ? '0.3' : '1'
+      item.style.pointerEvents = cond ? 'none' : 'auto'
     }
-
-    bloquear(checkBarba, incluyeBarba || incluyeTodo)
-    bloquear(checkCejas, incluyeCejas || incluyeTodo)
-    bloquear(checkMask, incluyeTodo)
-    bloquear(checkOcular, incluyeTodo || incluyeMasaje)
+    bloquear(checkBarba, v === 'Corte + Barba' || v === 'Experiencia Gold')
+    bloquear(checkCejas, v === 'Corte + Cejas' || v === 'Experiencia Gold')
+    bloquear(checkMask, v === 'Experiencia Gold')
+    bloquear(checkOcular, v === 'Experiencia Gold' || v === 'Corte + Masaje')
     actualizarTotal()
   })
 
@@ -425,33 +839,33 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 
   // Ubicación
-  const selectUbicacion = document.getElementById('cita-ubicacion')
-  selectUbicacion.addEventListener('change', function() {
+  document.getElementById('cita-ubicacion').addEventListener('change', function () {
     if (this.value === 'En la barbería') {
       document.getElementById('seccion-calendario').style.display = 'block'
       renderCalendario()
     }
     if (this.value === 'A domicilio (+$8.000)') {
       cerrarCitas()
-      const mensaje = `Hola Edwin ✂️, quiero solicitar un *servicio a domicilio*. ¿Tienes disponibilidad? ¿Cuál es tu zona de cobertura?`
-      window.open(`https://wa.me/573173475482?text=${encodeURIComponent(mensaje)}`, '_blank')
+      const msg = `Hola Edwin ✂️, quiero solicitar un *servicio a domicilio*. ¿Tienes disponibilidad? ¿Cuál es tu zona de cobertura?`
+      window.open(`https://wa.me/573173475482?text=${encodeURIComponent(msg)}`, '_blank')
       this.value = ''
     }
+    actualizarTotal()
   })
 
   // Envío citas
-  document.getElementById('form-citas').addEventListener('submit', async function(e) {
+  document.getElementById('form-citas').addEventListener('submit', async function (e) {
     e.preventDefault()
     const telefono = document.getElementById('cita-telefono').value
     if (!telefono.startsWith('3') || telefono.length !== 10) {
-      document.getElementById('error-telefono').innerHTML = '⚠️ El número debe empezar por 3 y tener 10 dígitos'
+      document.getElementById('error-telefono').innerHTML = '⚠️ Número inválido'
       document.getElementById('error-telefono').style.display = 'block'
       return
     }
-    if (!fechaSeleccionada) { alert('Por favor selecciona un día en el calendario.'); return }
+    if (!fechaSeleccionada) { alert('Por favor selecciona un día.'); return }
     if (!horaSeleccionada) { alert('Por favor selecciona una hora disponible.'); return }
     if (!document.getElementById('terminos-check').checked) {
-      alert('Debes aceptar los términos y condiciones para continuar.')
+      alert('Debes aceptar los términos y condiciones.')
       return
     }
     const boton = document.getElementById('boton-agendar')
@@ -470,21 +884,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const resultado = await guardarCita(datos)
     if (resultado.exito) {
-      const fechaFormato = new Date(fechaSeleccionada + 'T12:00:00').toLocaleDateString('es', {
+      const fechaFmt = new Date(fechaSeleccionada + 'T12:00:00').toLocaleDateString('es', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
       })
       const adicionesTexto = adicionesSeleccionadas.length > 0
         ? `➕ Adiciones: ${adicionesSeleccionadas.join(', ')}\n` : ''
       const mensaje =
         `Hola Edwin ✂️, quiero confirmar mi cita.\n\n` +
-        `👤 Nombre: ${datos.nombre}\n` +
-        `📱 Teléfono: ${datos.telefono}\n` +
-        `✂️ Servicio: ${datos.servicio}\n` +
-        `${adicionesTexto}` +
-        `📍 Ubicación: ${datos.ubicacion}\n` +
-        `📅 Fecha: ${fechaFormato}\n` +
-        `🕐 Hora: ${datos.hora}\n` +
-        `💰 Total: $${total.toLocaleString()}\n\n` +
+        `👤 Nombre: ${datos.nombre}\n📱 Teléfono: ${datos.telefono}\n` +
+        `✂️ Servicio: ${datos.servicio}\n${adicionesTexto}` +
+        `📍 Ubicación: ${datos.ubicacion}\n📅 Fecha: ${fechaFmt}\n` +
+        `🕐 Hora: ${datos.hora}\n💰 Total: $${total.toLocaleString()}\n\n` +
         `¿Queda confirmada la cita?`
       cerrarCitas()
       this.reset()
@@ -510,9 +920,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { threshold: 0.1 })
   document.querySelectorAll('.revelar').forEach(el => observador.observe(el))
 
-  // Escape
+  // Escape cierra modales
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { cerrarModal(); cerrarCitas(); cerrarResena() }
+    if (e.key === 'Escape') {
+      cerrarModal(); cerrarCitas(); cerrarResena(); cerrarSesion()
+    }
   })
-
 })
