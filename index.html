@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edwin Barber</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;600&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar">
+    <div class="navbar-marca">
+      <img src="images/logo.png" class="nav-logo" alt="Edwin Barber Logo">
+    </div>
+
+    <div class="nav-acciones">
+      <!-- Icono persona / sesión -->
+      <button class="nav-btn-icono" id="btn-sesion" onclick="abrirSesion()" aria-label="Mi cuenta">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        <span class="nav-sesion-badge" id="nav-sesion-badge" style="display:none;"></span>
+      </button>
+
+      <!-- Hamburger -->
+      <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMenu()" aria-label="Menú">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+
+    <!-- Menú desplegable -->
+    <div class="nav-menu" id="nav-menu">
+      <ul class="nav-links">
+        <li><a href="#inicio" onclick="cerrarMenu()">Inicio</a></li>
+        <li><a href="#servicios" onclick="cerrarMenu()">Servicios</a></li>
+        <li><a href="#galeria" onclick="cerrarMenu()">Galería</a></li>
+        <li><a href="#resenas" onclick="cerrarMenu()">Reseñas</a></li>
+        <li><a href="#contacto" onclick="cerrarMenu()">Contacto</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="inicio">
+    <div class="hero-overlay"></div>
+    <div class="hero-contenido animar-entrada">
+      <img src="images/logo.jpg" class="hero-logo" alt="Edwin Barber">
+      <h1 class="hero-titulo">EDWIN<br>BARBER</h1>
+      <p class="hero-eyebrow">✦ Barbero Profesional</p>
+      <p class="hero-subtitulo">Jamundí · Cali, Valle del Cauca</p>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="hero-stat-numero">XP Gold</span>
+          <span class="hero-stat-label">Precisión en cada detalle</span>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <span class="hero-stat-numero">1500+</span>
+          <span class="hero-stat-label">Clientes atendidos</span>
+        </div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat">
+          <span class="hero-stat-numero">100%</span>
+          <span class="hero-stat-label">Satisfacción</span>
+        </div>
+      </div>
+      <button class="boton-hero" onclick="abrirCitas()">Reservar mi cita →</button>
+    </div>
+    <div class="hero-scroll">
+      <div class="flecha-larga"></div>
+    </div>
+  </section>
+
+  <!-- POR QUÉ EDWIN BARBER -->
+  <section class="porque" id="porque">
+    <h2 class="titulo-seccion revelar">¿Por qué Edwin Barber?</h2>
+    <div class="porque-grid">
+      <div class="porque-card revelar">
+        <span class="porque-icono">✂️</span>
+        <h3 class="porque-titulo">Precisión en cada corte</h3>
+        <p class="porque-texto">Cada detalle importa. Desde la línea hasta el acabado, cada corte es tratado como una obra de arte.</p>
+      </div>
+      <div class="porque-card revelar">
+        <span class="porque-icono">💆</span>
+        <h3 class="porque-titulo">Experiencia completa</h3>
+        <p class="porque-texto">No solo cortamos cabello — ofrecemos una experiencia de relajación con masajes, tratamientos y más.</p>
+      </div>
+      <div class="porque-card revelar">
+        <span class="porque-icono">📅</span>
+        <h3 class="porque-titulo">Tu tiempo, tu horario</h3>
+        <p class="porque-texto">Reserva tu cita en segundos desde aquí. Sin llamadas, sin esperas. Solo tú y tu estilo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICIOS -->
+  <section class="servicios" id="servicios">
+    <h2 class="titulo-seccion revelar">Servicios</h2>
+    <div class="servicios-grid">
+      <div class="servicio-card revelar" onclick="abrirServicio('corte-clasico')">
+        <span class="badge-popular">Más popular</span>
+        <h3 class="servicio-nombre">💇‍♂️ Corte Básico</h3>
+        <p class="servicio-precio">$20.000</p>
+        <p class="servicio-descripcion">Corte de cabello profesional con asesoría</p>
+        <span class="ver-mas">Ver más →</span>
+      </div>
+      <div class="servicio-card revelar" onclick="abrirServicio('corte-cejas')">
+        <h3 class="servicio-nombre">✂️ Corte + Cejas</h3>
+        <p class="servicio-precio">$24.000</p>
+        <p class="servicio-descripcion">Corte y perfilado de cejas</p>
+        <span class="ver-mas">Ver más →</span>
+      </div>
+      <div class="servicio-card revelar" onclick="abrirServicio('corte-barba')">
+        <h3 class="servicio-nombre">🪒 Corte + Barba</h3>
+        <p class="servicio-precio">$27.000</p>
+        <p class="servicio-descripcion">Combo corte y perfilado de barba</p>
+        <span class="ver-mas">Ver más →</span>
+      </div>
+      <div class="servicio-card revelar" onclick="abrirServicio('corte-masaje')">
+        <h3 class="servicio-nombre">💆 Corte + Masaje</h3>
+        <p class="servicio-precio">$28.000</p>
+        <p class="servicio-descripcion">Corte más masaje ocular</p>
+        <span class="ver-mas">Ver más →</span>
+      </div>
+      <div class="servicio-card card-gold revelar" onclick="abrirServicio('experiencia-gold')">
+        <span class="badge-gold">⭐ Premium</span>
+        <h3 class="servicio-nombre">✦ Experiencia Gold</h3>
+        <p class="servicio-precio precio-gold">$45.000</p>
+        <p class="servicio-descripcion">Corte + cejas + barba + mascarilla + masaje ocular</p>
+        <span class="ver-mas">Ver más →</span>
+      </div>
+      <div class="servicio-card card-rojo revelar" onclick="abrirServicio('domicilio')">
+        <h3 class="servicio-nombre">🏠 A Domicilio</h3>
+        <p class="servicio-precio">+$8.000</p>
+        <p class="servicio-descripcion">Cualquier servicio en tu hogar</p>
+        <span class="ver-mas">Ver más →</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ADICIONES -->
+  <section class="adiciones" id="adiciones">
+    <h2 class="titulo-seccion revelar">Adiciones</h2>
+    <div class="adiciones-grid">
+      <div class="servicio-card revelar" onclick="abrirServicio('black-mask')">
+        <h3 class="servicio-nombre">🖤 Black Mask Nasal</h3>
+        <p class="servicio-precio">$5.000</p>
+        <p class="servicio-descripcion">Remoción de puntos negros con mascarilla</p>
+        <span class="ver-mas">Ver más →</span>
+      </div>
+      <div class="servicio-card revelar" onclick="abrirServicio('masaje-ocular')">
+        <h3 class="servicio-nombre">👁️ Masaje Ocular</h3>
+        <p class="servicio-precio">$10.000</p>
+        <p class="servicio-descripcion">Relajación ocular con dispositivo profesional</p>
+        <span class="ver-mas">Ver más →</span>
+      </div>
+      <div class="servicio-card revelar" onclick="abrirServicio('barba')">
+        <h3 class="servicio-nombre">🧔‍♂️ Barba</h3>
+        <p class="servicio-precio">$10.000</p>
+        <p class="servicio-descripcion">Perfilado y definición de barba profesional</p>
+        <span class="ver-mas">Ver más →</span>
+      </div>
+      <div class="servicio-card revelar" onclick="abrirServicio('cejas')">
+        <h3 class="servicio-nombre">🤨 Cejas</h3>
+        <p class="servicio-precio">$5.000</p>
+        <p class="servicio-descripcion">Perfilado y definición de cejas</p>
+        <span class="ver-mas">Ver más →</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- GALERÍA -->
+  <section class="galeria" id="galeria">
+    <h2 class="titulo-seccion revelar">Galería</h2>
+    <div class="galeria-grid">
+      <div class="galeria-item revelar"><img src="images/cortecris.webp" alt="Corte 1"></div>
+      <div class="galeria-item revelar"><img src="images/cortebrajean.webp" alt="Corte 2"></div>
+      <div class="galeria-item revelar"><img src="images/corteafro.webp" alt="Corte 3"></div>
+      <div class="galeria-item revelar"><img src="images/cortecc.webp" alt="Corte 4"></div>
+      <div class="galeria-item revelar"><img src="images/cortefelipe.webp" alt="Corte 5"></div>
+      <div class="galeria-item revelar"><img src="images/cortejh.webp" alt="Corte 6"></div>
+    </div>
+  </section>
+
+  <!-- RESEÑAS -->
+  <section class="resenas" id="resenas">
+    <h2 class="titulo-seccion revelar">Reseñas</h2>
+    <div class="resenas-resumen revelar">
+      <div class="resenas-promedio">
+        <span class="promedio-numero" id="promedio-numero">—</span>
+        <div class="promedio-estrellas" id="promedio-estrellas"></div>
+        <span class="promedio-total" id="promedio-total">Sin reseñas aún</span>
+      </div>
+    </div>
+    <div class="resenas-carrusel">
+      <div class="resenas-grid" id="resenas-grid"></div>
+    </div>
+    <div class="revelar" style="text-align:center; margin-top:32px;">
+      <button class="boton-resena" onclick="abrirResena()">✍️ Dejar mi reseña</button>
+    </div>
+  </section>
+
+  <!-- CONTACTO -->
+  <section class="contacto" id="contacto">
+    <h2 class="titulo-seccion revelar">Contacto</h2>
+    <div class="contacto-contenido revelar">
+      <div class="contacto-item">
+        <span class="contacto-icono">📅</span>
+        <div>
+          <p class="contacto-label">Horarios En Barbería</p>
+          <p class="contacto-valor">Sábados 2:00 PM – 9:00 PM</p>
+          <p class="contacto-valor">Domingos 9:00 AM – 3:00 PM</p>
+        </div>
+      </div>
+      <div class="contacto-item">
+        <span class="contacto-icono">🏠</span>
+        <div>
+          <p class="contacto-label">Domicilios</p>
+          <p class="contacto-valor">Lunes a Miércoles + Viernes</p>
+          <p class="contacto-valor">Consultar disponibilidad</p>
+        </div>
+      </div>
+      <div class="contacto-item">
+        <span class="contacto-icono">📍</span>
+        <div>
+          <p class="contacto-label">Ubicación</p>
+          <p class="contacto-valor">Jamundí, Valle del Cauca</p>
+        </div>
+      </div>
+      <div class="contacto-item">
+        <span class="contacto-icono">💬</span>
+        <div>
+          <p class="contacto-label">WhatsApp</p>
+          <p class="contacto-valor">3173475482</p>
+        </div>
+      </div>
+      <button class="boton-whatsapp" onclick="abrirCitas()">Agendar una cita</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>© 2025 Edwin Barber · Todos los derechos reservados</p>
+    <p class="footer-sub">Calidad · Estilo · Precisión</p>
+  </footer>
+
+  <!-- BOTÓN FLOTANTE -->
+  <button class="boton-flotante" onclick="abrirCitas()">
+    ✂️ Reservar
+  </button>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: SESIÓN (cliente / admin) -->
+  <!-- ============================================================ -->
+  <div class="modal-overlay" id="modal-sesion" onclick="cerrarSesion()">
+    <div class="modal-contenido" onclick="event.stopPropagation()">
+      <button class="modal-cerrar" onclick="cerrarSesion()">✕</button>
+
+      <!-- Vista: sin sesión -->
+      <div id="vista-login">
+        <div class="modal-icono">👤</div>
+        <h2 class="modal-titulo">Mi Cuenta</h2>
+        <p class="modal-descripcion">Ingresa tu nombre y número para ver tus citas reservadas.</p>
+        <div class="campo">
+          <label class="campo-label">Nombre</label>
+          <input class="campo-input" type="text" id="login-nombre" placeholder="Tu nombre completo">
+        </div>
+        <div class="campo">
+          <label class="campo-label">Número de WhatsApp</label>
+          <input class="campo-input" type="tel" id="login-telefono" placeholder="3XXXXXXXXX" maxlength="10">
+          <p id="login-error" style="display:none; color:#c0392b; font-size:11px; margin-top:4px;"></p>
+        </div>
+        <button class="boton-principal" onclick="loginCliente()">Ver mis citas</button>
+        <button class="boton-admin-link" onclick="mostrarLoginAdmin()">🔐 Acceso administrador</button>
+      </div>
+
+      <!-- Vista: login admin -->
+      <div id="vista-login-admin" style="display:none;">
+        <div class="modal-icono">🔐</div>
+        <h2 class="modal-titulo">Admin</h2>
+        <p class="modal-descripcion">Ingresa la contraseña de administrador.</p>
+        <div class="campo">
+          <label class="campo-label">Contraseña</label>
+          <input class="campo-input" type="password" id="admin-password" placeholder="••••••••">
+          <p id="admin-error" style="display:none; color:#c0392b; font-size:11px; margin-top:4px;"></p>
+        </div>
+        <button class="boton-principal" onclick="loginAdmin()">Entrar</button>
+        <button class="boton-admin-link" onclick="mostrarLoginCliente()">← Volver</button>
+      </div>
+
+      <!-- Vista: perfil cliente -->
+      <div id="vista-cliente" style="display:none;">
+        <div class="modal-icono">✂️</div>
+        <h2 class="modal-titulo" id="cliente-bienvenida">Hola!</h2>
+        <div id="citas-cliente-lista"></div>
+        <button class="boton-principal boton-reservar-nuevo" onclick="cerrarSesion(); abrirCitas()">+ Nueva cita</button>
+        <button class="boton-admin-link" onclick="logoutCliente()">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PANEL ADMIN (pantalla completa, se activa sobre todo) -->
+  <!-- ============================================================ -->
+  <div class="panel-admin" id="panel-admin" style="display:none;">
+
+    <!-- Header admin -->
+    <div class="admin-header">
+      <div class="admin-header-izq">
+        <img src="images/logo.png" class="admin-logo" alt="Logo">
+        <div>
+          <p class="admin-marca">EDWIN BARBER</p>
+          <p class="admin-rol">Panel de Administración</p>
+        </div>
+      </div>
+      <button class="admin-cerrar-btn" onclick="cerrarPanelAdmin()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        Salir
+      </button>
+    </div>
+
+    <!-- Tabs de navegación -->
+    <div class="admin-tabs">
+      <button class="admin-tab activo" onclick="cambiarTab('dashboard')">📊 Dashboard</button>
+      <button class="admin-tab" onclick="cambiarTab('agenda')">📅 Agenda</button>
+      <button class="admin-tab" onclick="cambiarTab('citas')">📋 Todas las citas</button>
+    </div>
+
+    <!-- ===== TAB: DASHBOARD ===== -->
+    <div class="admin-contenido" id="tab-dashboard">
+
+      <!-- Stats del día -->
+      <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+          <p class="admin-stat-label">HOY</p>
+          <p class="admin-stat-titulo">OCUPACIÓN</p>
+          <p class="admin-stat-numero" id="stat-ocupacion">—%</p>
+          <div class="admin-stat-barra-bg">
+            <div class="admin-stat-barra-fill" id="stat-ocupacion-barra" style="width:0%"></div>
+          </div>
+          <p class="admin-stat-sub" id="stat-slots">Cargando...</p>
+        </div>
+        <div class="admin-stat-card admin-stat-dark">
+          <p class="admin-stat-label">HOY</p>
+          <p class="admin-stat-titulo">CITAS DEL DÍA</p>
+          <p class="admin-stat-numero" id="stat-citas-dia">0 / 0</p>
+          <div class="admin-stat-barra-bg">
+            <div class="admin-stat-barra-fill admin-barra-verde" id="stat-citas-barra" style="width:0%"></div>
+          </div>
+          <p class="admin-stat-sub" id="stat-ingresos-dia">$0 hoy</p>
+        </div>
+      </div>
+
+      <!-- Gráfica de ingresos -->
+      <div class="admin-grafica-card">
+        <p class="admin-grafica-titulo">Evolución de Ingresos</p>
+        <p class="admin-grafica-sub">Últimos 7 días</p>
+        <div class="admin-grafica" id="admin-grafica"></div>
+      </div>
+
+      <!-- Selector de fecha para el dashboard -->
+      <div class="admin-fecha-selector">
+        <button class="admin-fecha-btn" onclick="cambiarFechaDash(-1)">‹</button>
+        <span class="admin-fecha-texto" id="admin-fecha-texto"></span>
+        <button class="admin-fecha-btn" onclick="cambiarFechaDash(1)">›</button>
+      </div>
+
+      <!-- Citas del día (lista rápida) -->
+      <div class="admin-citas-hoy" id="admin-citas-hoy"></div>
+    </div>
+
+    <!-- ===== TAB: AGENDA ===== -->
+    <div class="admin-contenido" id="tab-agenda" style="display:none;">
+      <div class="admin-fecha-selector">
+        <button class="admin-fecha-btn" onclick="cambiarFechaAgenda(-1)">‹</button>
+        <span class="admin-fecha-texto" id="agenda-fecha-texto"></span>
+        <button class="admin-fecha-btn" onclick="cambiarFechaAgenda(1)">›</button>
+      </div>
+
+      <!-- Leyenda -->
+      <div class="agenda-leyenda">
+        <span class="leyenda-item"><span class="leyenda-dot leyenda-pendiente"></span>Pendiente</span>
+        <span class="leyenda-item"><span class="leyenda-dot leyenda-confirmada"></span>Confirmada</span>
+        <span class="leyenda-item"><span class="leyenda-dot leyenda-completada"></span>Completada</span>
+        <span class="leyenda-item"><span class="leyenda-dot leyenda-cancelada"></span>Cancelada</span>
+      </div>
+
+      <!-- Timeline de citas -->
+      <div class="agenda-timeline" id="agenda-timeline"></div>
+    </div>
+
+    <!-- ===== TAB: TODAS LAS CITAS ===== -->
+    <div class="admin-contenido" id="tab-citas" style="display:none;">
+      <div class="admin-filtros">
+        <select class="campo-input admin-filtro-select" id="filtro-estado">
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="confirmada">Confirmada</option>
+          <option value="completada">Completada</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+      </div>
+      <div id="todas-citas-lista"></div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL SERVICIO -->
+  <!-- ============================================================ -->
+  <div class="modal-overlay" id="modal-servicio" onclick="cerrarModal()">
+    <div class="modal-contenido" onclick="event.stopPropagation()">
+      <button class="modal-cerrar" onclick="cerrarModal()">✕</button>
+      <div class="modal-icono" id="modal-icono"></div>
+      <h2 class="modal-titulo" id="modal-titulo"></h2>
+      <p class="modal-precio" id="modal-precio"></p>
+      <p class="modal-descripcion" id="modal-descripcion"></p>
+      <ul class="modal-lista" id="modal-lista"></ul>
+      <button class="boton-principal" onclick="cerrarModal(); abrirCitas()">Agendar este servicio</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL RESEÑA -->
+  <!-- ============================================================ -->
+  <div class="modal-overlay" id="modal-resena" onclick="cerrarResena()">
+    <div class="modal-contenido" onclick="event.stopPropagation()">
+      <button class="modal-cerrar" onclick="cerrarResena()">✕</button>
+      <div class="modal-icono">✍️</div>
+      <h2 class="modal-titulo">Dejar Reseña</h2>
+      <p class="modal-descripcion">Tu opinión nos ayuda a mejorar y a que otros clientes confíen en el servicio.</p>
+      <form id="form-resena">
+        <div class="campo">
+          <label class="campo-label">Tu nombre</label>
+          <input class="campo-input" type="text" id="resena-nombre" placeholder="¿Cómo te llamas?" required>
+        </div>
+        <div class="campo">
+          <label class="campo-label">Puntuación</label>
+          <div class="estrellas-selector" id="estrellas-selector">
+            <span class="estrella-btn" data-valor="1">★</span>
+            <span class="estrella-btn" data-valor="2">★</span>
+            <span class="estrella-btn" data-valor="3">★</span>
+            <span class="estrella-btn" data-valor="4">★</span>
+            <span class="estrella-btn" data-valor="5">★</span>
+          </div>
+          <p id="error-estrellas" style="display:none; color:#c0392b; font-size:11px;"></p>
+        </div>
+        <div class="campo">
+          <label class="campo-label">Tu comentario</label>
+          <textarea class="campo-input" id="resena-comentario" placeholder="Cuéntanos tu experiencia..." rows="3" required></textarea>
+        </div>
+        <button class="boton-principal" type="submit" id="boton-resena">Enviar reseña</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL CITAS -->
+  <!-- ============================================================ -->
+  <div class="modal-overlay" id="modal-citas" onclick="cerrarCitas()">
+    <div class="modal-contenido modal-citas-contenido" onclick="event.stopPropagation()">
+      <button class="modal-cerrar" onclick="cerrarCitas()">✕</button>
+      <div class="modal-icono">📅</div>
+      <h2 class="modal-titulo">Agendar Cita</h2>
+      <p class="modal-descripcion">Solo para citas en barbería.<br>Para domicilio selecciona "A domicilio" en "¿Dónde?"</p>
+
+      <form id="form-citas">
+        <div class="campo">
+          <label class="campo-label">Nombre completo</label>
+          <input class="campo-input" type="text" id="cita-nombre" placeholder="Tu nombre" required>
+        </div>
+        <div class="campo">
+          <label class="campo-label">Número de WhatsApp</label>
+          <input class="campo-input" type="tel" id="cita-telefono" placeholder="3173475482" maxlength="10" required>
+          <p id="error-telefono" style="display:none; color:#c0392b; font-size:11px; margin-top:4px;"></p>
+          <p class="campo-nota">Escribe el mismo número desde donde nos vas a escribir por WhatsApp</p>
+        </div>
+        <div class="campo">
+          <label class="campo-label">Servicio principal</label>
+          <select class="campo-input" id="cita-servicio" required>
+            <option value="">Selecciona un servicio</option>
+            <option value="Corte Básico">Corte Básico — $20.000</option>
+            <option value="Corte + Cejas">Corte + Cejas — $24.000</option>
+            <option value="Corte + Barba">Corte + Barba — $27.000</option>
+            <option value="Corte + Masaje">Corte + Masaje — $28.000</option>
+            <option value="Experiencia Gold">Experiencia Gold — $45.000</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="campo-label">Adiciones (opcional)</label>
+          <p class="campo-nota" style="margin-bottom:10px;">Selecciona los servicios adicionales que deseas</p>
+          <div class="adiciones-check-grid">
+            <label class="adicion-item">
+              <input type="checkbox" class="adicion-checkbox" data-nombre="Black Mask Nasal" data-precio="5000">
+              <div class="adicion-info">
+                <span class="adicion-nombre">🖤 Black Mask Nasal</span>
+                <span class="adicion-precio">+$5.000</span>
+              </div>
+            </label>
+            <label class="adicion-item">
+              <input type="checkbox" class="adicion-checkbox" data-nombre="Masaje Ocular" data-precio="10000">
+              <div class="adicion-info">
+                <span class="adicion-nombre">👁️ Masaje Ocular</span>
+                <span class="adicion-precio">+$10.000</span>
+              </div>
+            </label>
+            <label class="adicion-item">
+              <input type="checkbox" class="adicion-checkbox" data-nombre="Barba" data-precio="10000">
+              <div class="adicion-info">
+                <span class="adicion-nombre">🧔‍♂️ Barba</span>
+                <span class="adicion-precio">+$10.000</span>
+              </div>
+            </label>
+            <label class="adicion-item">
+              <input type="checkbox" class="adicion-checkbox" data-nombre="Cejas" data-precio="5000">
+              <div class="adicion-info">
+                <span class="adicion-nombre">🤨 Cejas</span>
+                <span class="adicion-precio">+$5.000</span>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="campo">
+          <label class="campo-label">¿Dónde?</label>
+          <select class="campo-input" id="cita-ubicacion" required>
+            <option value="">Selecciona una opción</option>
+            <option value="En la barbería">En la barbería</option>
+            <option value="A domicilio (+$8.000)">A domicilio (+$8.000)</option>
+          </select>
+        </div>
+        <div id="seccion-calendario" style="display:none;">
+          <label class="campo-label" style="display:block; margin-bottom:10px;">Elige un día</label>
+          <div id="calendario" class="calendario"></div>
+        </div>
+        <div id="seccion-horas" style="display:none;">
+          <label class="campo-label" style="display:block; margin:16px 0 10px;">Elige una hora</label>
+          <div id="horas-contenedor" class="horas-grid"></div>
+        </div>
+        <div class="terminos-box">
+          <h4 class="terminos-titulo">📋 Términos y Condiciones</h4>
+          <ul class="terminos-lista">
+            <li>Las citas deben cancelarse con mínimo <strong>1 hora de anticipación.</strong></li>
+            <li>Si no cancelas a tiempo, se cobrará el <strong>50% del servicio</strong> en tu próxima visita.</li>
+            <li>El número de WhatsApp ingresado debe ser el mismo desde donde confirmarás la cita.</li>
+            <li>Las citas falsas o de broma quedan registradas y pueden generar bloqueo del servicio.</li>
+            <li>Edwin Barber se reserva el derecho de cancelar citas en casos de fuerza mayor.</li>
+          </ul>
+          <label class="terminos-check-label">
+            <input type="checkbox" id="terminos-check">
+            <span>He leído y acepto los términos y condiciones</span>
+          </label>
+        </div>
+        <button class="boton-principal" type="submit" id="boton-agendar" style="display:none;">
+          Confirmar cita
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
