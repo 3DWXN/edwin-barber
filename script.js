@@ -266,11 +266,21 @@ window.cambiarTab = function (tab) {
 }
 
 // ================================================================
+// HELPER — fecha local sin bug de timezone
+// ================================================================
+function fechaLocal (date) {
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+// ================================================================
 // DASHBOARD
 // ================================================================
 async function cargarDashboard () {
-  const fechaStr = fechaDash.toISOString().split('T')[0]
-  const hoyStr = new Date().toISOString().split('T')[0]
+  const fechaStr = fechaLocal(fechaDash)
+  const hoyStr = fechaLocal(new Date())
 
   // Texto fecha
   document.getElementById('admin-fecha-texto').textContent =
@@ -344,7 +354,7 @@ window.cambiarFechaDash = function (delta) {
 // AGENDA
 // ================================================================
 async function cargarAgenda () {
-  const fechaStr = fechaAgenda.toISOString().split('T')[0]
+  const fechaStr = fechaLocal(fechaAgenda)
   document.getElementById('agenda-fecha-texto').textContent =
     fechaAgenda.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
@@ -618,7 +628,7 @@ function renderCalendario () {
     const dia = document.createElement('div')
     dia.className = 'cal-dia'
     const nombreDia = diaSemana === 6 ? 'Sáb' : 'Dom'
-    const fechaStr = fecha.toISOString().split('T')[0]
+    const fechaStr = fechaLocal(fecha)
     dia.innerHTML = `
       <span class="cal-nombre">${nombreDia}</span>
       <span class="cal-numero">${fecha.getDate()}</span>
@@ -641,7 +651,7 @@ async function seleccionarFecha (fechaStr, diaSemana, elemento) {
   const horasOcupadas = await obtenerHorasOcupadas(fechaStr)
   const turnos = diaSemana === 6 ? CONFIG_SLOTS.sabado.turnos : CONFIG_SLOTS.domingo.turnos
   const ahora = new Date()
-  const esHoy = fechaStr === ahora.toISOString().split('T')[0]
+  const esHoy = fechaStr === fechaLocal(new Date())
   contenedorHoras.innerHTML = ''
   turnos.forEach(turno => {
     const btn = document.createElement('button')
