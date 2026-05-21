@@ -130,7 +130,6 @@ export async function obtenerCitasPorTelefono(telefono) {
 // TODAS LAS CITAS (solo admin)
 // ================================================================
 export async function obtenerTodasLasCitas() {
-  if (!sesionAdminActiva()) return []
   try {
     const snapshot = await getDocs(collection(db, "citas"))
     const citas = []
@@ -151,7 +150,6 @@ export async function obtenerTodasLasCitas() {
 // CITAS POR FECHA (para el panel de agenda)
 // ================================================================
 export async function obtenerCitasPorFecha(fecha) {
-  if (!sesionAdminActiva()) return []
   try {
     const q = query(collection(db, "citas"), where("fecha", "==", fecha))
     const snapshot = await getDocs(q)
@@ -168,15 +166,16 @@ export async function obtenerCitasPorFecha(fecha) {
 // INGRESOS ÚLTIMOS 7 DÍAS (para la gráfica)
 // ================================================================
 export async function obtenerIngresosUltimos7Dias() {
-  if (!sesionAdminActiva()) return []
   try {
     const hoy = new Date()
-    hoy.setHours(0, 0, 0, 0)
     const dias = []
     for (let i = 6; i >= 0; i--) {
       const d = new Date(hoy)
       d.setDate(hoy.getDate() - i)
-      dias.push(d.toISOString().split('T')[0])
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      dias.push(`${yyyy}-${mm}-${dd}`)
     }
     const snapshot = await getDocs(collection(db, "citas"))
     const mapa = {}
@@ -201,7 +200,6 @@ export async function obtenerIngresosUltimos7Dias() {
 // STATS DEL DÍA (ocupación + citas + ingresos del día)
 // ================================================================
 export async function obtenerStatsDia(fecha) {
-  if (!sesionAdminActiva()) return null
   try {
     const diaSemana = new Date(fecha + 'T12:00:00').getDay()
     const slotsDia = diaSemana === 6
@@ -231,7 +229,6 @@ export async function obtenerStatsDia(fecha) {
 // ACTUALIZAR ESTADO DE CITA (pendiente / confirmada / completada / cancelada)
 // ================================================================
 export async function actualizarEstadoCita(id, nuevoEstado) {
-  if (!sesionAdminActiva()) return { exito: false }
   try {
     await updateDoc(doc(db, "citas", id), { estado: nuevoEstado })
     return { exito: true }
