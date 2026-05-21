@@ -269,3 +269,5 @@ export async function obtenerResenas() {
     return []
   }
 }
+
+
