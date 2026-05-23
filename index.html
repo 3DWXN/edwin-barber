@@ -368,8 +368,16 @@
 
       <!-- Gráfica de ingresos -->
       <div class="admin-grafica-card">
-        <p class="admin-grafica-titulo">Evolución de Ingresos</p>
-        <p class="admin-grafica-sub">Últimos 7 días</p>
+        <div class="admin-grafica-header">
+          <div>
+            <p class="admin-grafica-titulo">Evolución de Ingresos</p>
+            <p class="admin-grafica-sub">Esta semana</p>
+          </div>
+          <div class="admin-grafica-nav">
+            <button class="admin-fecha-btn" onclick="cambiarSemanaGrafica(-1)" title="Semana anterior">‹</button>
+            <button class="admin-fecha-btn" onclick="cambiarSemanaGrafica(1)" title="Semana siguiente">›</button>
+          </div>
+        </div>
         <div class="admin-grafica" id="admin-grafica"></div>
       </div>
 
@@ -414,6 +422,7 @@
           <option value="completada">Completada</option>
           <option value="cancelada">Cancelada</option>
         </select>
+        <button class="boton-excel" onclick="abrirExportarExcel()">⬇️ Exportar Excel</button>
       </div>
       <div id="todas-citas-lista"></div>
     </div>
@@ -569,6 +578,27 @@
           Confirmar cita
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL EXPORTAR EXCEL -->
+  <!-- ============================================================ -->
+  <div class="modal-overlay" id="modal-excel" onclick="cerrarExportarExcel()">
+    <div class="modal-contenido" onclick="event.stopPropagation()">
+      <button class="modal-cerrar" onclick="cerrarExportarExcel()">✕</button>
+      <div class="modal-icono">📊</div>
+      <h2 class="modal-titulo">Exportar Excel</h2>
+      <p class="modal-descripcion">Selecciona el rango de fechas. Recibirás un archivo con dos hojas: tabla de citas y resumen de ingresos por día.</p>
+      <div class="campo">
+        <label class="campo-label">Fecha inicio</label>
+        <input class="campo-input" type="date" id="excel-fecha-inicio">
+      </div>
+      <div class="campo">
+        <label class="campo-label">Fecha fin</label>
+        <input class="campo-input" type="date" id="excel-fecha-fin">
+      </div>
+      <button class="boton-principal" id="btn-generar-excel" onclick="generarExcel()">⬇️ Descargar Excel</button>
     </div>
   </div>
 

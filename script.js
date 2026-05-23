@@ -2,7 +2,7 @@
 import {
   guardarCita, obtenerHorasOcupadas, guardarResena, obtenerResenas,
   obtenerCitasPorTelefono, obtenerTodasLasCitas, obtenerCitasPorFecha,
-  obtenerIngresosUltimos7Dias, obtenerStatsDia, actualizarEstadoCita,
+  obtenerIngresosSemana, obtenerCitasPorRango, obtenerStatsDia, actualizarEstadoCita,
   iniciarSesionAdmin, sesionAdminActiva, cerrarSesionAdmin,
   CONFIG_SLOTS
 } from './firebase.js'
@@ -24,6 +24,7 @@ let sesionCliente = null       // { nombre, telefono }
 let fechaDash = new Date()     // fecha activa en dashboard
 let fechaAgenda = new Date()   // fecha activa en agenda
 let todasCitas = []            // cache de citas para el tab de todas
+let offsetSemana = 0           // 0=semana actual, -1=anterior, +1=siguiente
 
 // ===== DATOS SERVICIOS =====
 const servicios = {
@@ -322,32 +323,153 @@ async function cargarDashboard () {
     }
   }
 
-  // Gráfica de ingresos
-  const datos7 = await obtenerIngresosUltimos7Dias()
-  renderGrafica(datos7, hoyStr)
+  // Gráfica semanal navegable
+  await cargarGraficaSemana()
 }
 
-function renderGrafica (datos, hoyStr) {
+async function cargarGraficaSemana () {
+  const hoyStr = fechaLocal(new Date())
+  const { dias, rangoTexto } = await obtenerIngresosSemana(offsetSemana)
+
+  // Actualizar rango en la UI
+  const subEl = document.querySelector('.admin-grafica-sub')
+  if (subEl) {
+    const esActual = offsetSemana === 0
+    subEl.textContent = esActual ? `Esta semana · ${rangoTexto}` : rangoTexto
+  }
+
+  renderGrafica(dias, hoyStr)
+}
+
+function renderGrafica (dias, hoyStr) {
   const contenedor = document.getElementById('admin-grafica')
   contenedor.innerHTML = ''
-  const maxVal = Math.max(...datos.map(d => d.total), 1)
-  datos.forEach(d => {
+  const maxVal = Math.max(...dias.map(d => d.total), 1)
+  dias.forEach(d => {
     const altura = Math.max((d.total / maxVal) * 85, d.total > 0 ? 8 : 4)
     const esHoy = d.fecha === hoyStr
     const wrap = document.createElement('div')
     wrap.className = 'grafica-barra-wrap'
     wrap.innerHTML = `
       <span class="grafica-valor">${d.total > 0 ? '$' + Math.round(d.total / 1000) + 'k' : ''}</span>
-      <div class="grafica-barra${esHoy ? ' hoy' : ''}" style="height:${altura}px"></div>
+      <div class="grafica-barra${esHoy ? ' hoy' : ''}" style="height:${altura}px" title="$${d.total.toLocaleString()}"></div>
       <span class="grafica-etiqueta">${d.etiqueta}${esHoy ? ' ●' : ''}</span>
     `
     contenedor.appendChild(wrap)
   })
 }
 
+// Navegación semanas en la gráfica
+window.cambiarSemanaGrafica = async function (delta) {
+  offsetSemana += delta
+  await cargarGraficaSemana()
+}
+
 window.cambiarFechaDash = function (delta) {
   fechaDash.setDate(fechaDash.getDate() + delta)
   cargarDashboard()
+}
+
+// ================================================================
+// EXPORTAR EXCEL
+// ================================================================
+window.abrirExportarExcel = function () {
+  document.getElementById('modal-excel').classList.add('abierto')
+  document.body.style.overflow = 'hidden'
+  // Defaults: primer día del mes actual al hoy
+  const hoy = fechaLocal(new Date())
+  const primerDia = hoy.substring(0, 7) + '-01'
+  document.getElementById('excel-fecha-inicio').value = primerDia
+  document.getElementById('excel-fecha-fin').value = hoy
+}
+
+window.cerrarExportarExcel = function () {
+  document.getElementById('modal-excel').classList.remove('abierto')
+  document.body.style.overflow = ''
+}
+
+window.generarExcel = async function () {
+  const inicio = document.getElementById('excel-fecha-inicio').value
+  const fin = document.getElementById('excel-fecha-fin').value
+  if (!inicio || !fin) { alert('Selecciona un rango de fechas.'); return }
+  if (inicio > fin) { alert('La fecha de inicio no puede ser mayor a la de fin.'); return }
+
+  const btn = document.getElementById('btn-generar-excel')
+  btn.textContent = '⏳ Generando...'
+  btn.disabled = true
+
+  const citas = await obtenerCitasPorRango(inicio, fin)
+
+  if (citas.length === 0) {
+    alert('No hay citas en ese rango de fechas.')
+    btn.textContent = '⬇️ Descargar Excel'
+    btn.disabled = false
+    return
+  }
+
+  // Importar SheetJS dinámicamente
+  const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs')
+
+  // ===== HOJA 1: TABLA DE DATOS =====
+  const encabezados = ['Fecha', 'Hora', 'Nombre', 'Teléfono', 'Servicio', 'Adiciones', 'Ubicación', 'Total ($)', 'Estado']
+  const filas = citas.map(c => [
+    c.fecha ? new Date(c.fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '—',
+    c.hora || '—',
+    c.nombre || '—',
+    c.telefono || '—',
+    c.servicio || '—',
+    c.adiciones && c.adiciones.length ? c.adiciones.join(', ') : '—',
+    c.ubicacion || '—',
+    c.total || 0,
+    c.estado || 'pendiente'
+  ])
+
+  const totalGeneral = citas.reduce((sum, c) => sum + (c.total || 0), 0)
+  const filaTotal = ['', '', '', '', '', '', 'TOTAL', totalGeneral, '']
+
+  const datosHoja1 = [encabezados, ...filas, [], filaTotal]
+  const hoja1 = XLSX.utils.aoa_to_sheet(datosHoja1)
+
+  // Ancho de columnas
+  hoja1['!cols'] = [
+    { wch: 30 }, { wch: 10 }, { wch: 20 }, { wch: 14 },
+    { wch: 22 }, { wch: 30 }, { wch: 18 }, { wch: 12 }, { wch: 12 }
+  ]
+
+  // ===== HOJA 2: DATOS PARA GRÁFICA (ingresos por fecha) =====
+  const mapaFechas = {}
+  citas.forEach(c => {
+    if (c.fecha) {
+      if (!mapaFechas[c.fecha]) mapaFechas[c.fecha] = { citas: 0, total: 0 }
+      mapaFechas[c.fecha].citas++
+      mapaFechas[c.fecha].total += c.total || 0
+    }
+  })
+
+  const encabezadosGrafica = ['Fecha', 'Día', 'Cantidad de citas', 'Ingresos ($)']
+  const filasGrafica = Object.entries(mapaFechas).sort().map(([fecha, datos]) => [
+    fecha,
+    new Date(fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }),
+    datos.citas,
+    datos.total
+  ])
+
+  const datosHoja2 = [encabezadosGrafica, ...filasGrafica]
+  const hoja2 = XLSX.utils.aoa_to_sheet(datosHoja2)
+  hoja2['!cols'] = [{ wch: 14 }, { wch: 30 }, { wch: 18 }, { wch: 14 }]
+
+  // Crear libro y agregar hojas
+  const libro = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(libro, hoja1, 'Citas')
+  XLSX.utils.book_append_sheet(libro, hoja2, 'Ingresos por día')
+
+  // Nombre del archivo
+  const nombreArchivo = `EdwinBarber_${inicio}_al_${fin}.xlsx`
+  XLSX.writeFile(libro, nombreArchivo)
+
+  btn.textContent = '⬇️ Descargar Excel'
+  btn.disabled = false
+  cerrarExportarExcel()
 }
 
 // ================================================================
@@ -980,4 +1102,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 })
-

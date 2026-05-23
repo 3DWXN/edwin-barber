@@ -163,34 +163,69 @@ export async function obtenerCitasPorFecha(fecha) {
 }
 
 // ================================================================
-// INGRESOS ÚLTIMOS 7 DÍAS (para la gráfica)
+// INGRESOS POR SEMANA (lunes a domingo) — para la gráfica navegable
+// offset: 0 = semana actual, -1 = semana pasada, etc.
 // ================================================================
-export async function obtenerIngresosUltimos7Dias() {
+export async function obtenerIngresosSemana(offset = 0) {
   try {
     const hoy = new Date()
+    const diaSemana = hoy.getDay() // 0=dom, 1=lun...
+    const lunesOffset = diaSemana === 0 ? -6 : 1 - diaSemana
+    const lunes = new Date(hoy)
+    lunes.setDate(hoy.getDate() + lunesOffset + offset * 7)
+
     const dias = []
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(hoy)
-      d.setDate(hoy.getDate() - i)
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(lunes)
+      d.setDate(lunes.getDate() + i)
       const yyyy = d.getFullYear()
       const mm = String(d.getMonth() + 1).padStart(2, '0')
       const dd = String(d.getDate()).padStart(2, '0')
-      dias.push(`${yyyy}-${mm}-${dd}`)
+      dias.push({
+        fecha: `${yyyy}-${mm}-${dd}`,
+        etiqueta: d.toLocaleDateString('es', { weekday: 'short' }),
+        dia: d.getDate(),
+        total: 0
+      })
     }
+
     const snapshot = await getDocs(collection(db, "citas"))
-    const mapa = {}
-    dias.forEach(f => (mapa[f] = 0))
     snapshot.forEach(docSnap => {
       const data = docSnap.data()
-      if (data.fecha && mapa[data.fecha] !== undefined && data.total) {
-        mapa[data.fecha] += data.total
+      const entrada = dias.find(d => d.fecha === data.fecha)
+      if (entrada && data.total) entrada.total += data.total
+    })
+
+    // Etiqueta del rango para mostrar en la UI
+    const inicio = dias[0]
+    const fin = dias[6]
+    const rangoTexto = `${inicio.dia} – ${fin.dia} ${new Date(fin.fecha + 'T12:00:00').toLocaleDateString('es', { month: 'short' })}`
+
+    return { dias, rangoTexto }
+  } catch (error) {
+    return { dias: [], rangoTexto: '' }
+  }
+}
+
+// ================================================================
+// CITAS POR RANGO DE FECHAS (para exportar Excel)
+// ================================================================
+export async function obtenerCitasPorRango(fechaInicio, fechaFin) {
+  try {
+    const snapshot = await getDocs(collection(db, "citas"))
+    const citas = []
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data()
+      if (data.fecha && data.fecha >= fechaInicio && data.fecha <= fechaFin) {
+        citas.push({ id: docSnap.id, ...data })
       }
     })
-    return dias.map(fecha => ({
-      fecha,
-      etiqueta: new Date(fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'short' }),
-      total: mapa[fecha]
-    }))
+    citas.sort((a, b) => {
+      const fechaComp = a.fecha.localeCompare(b.fecha)
+      if (fechaComp !== 0) return fechaComp
+      return (a.hora || '').localeCompare(b.hora || '')
+    })
+    return citas
   } catch (error) {
     return []
   }
@@ -269,5 +304,3 @@ export async function obtenerResenas() {
     return []
   }
 }
-
-

@@ -1871,6 +1871,51 @@ body {
   letter-spacing: 1px;
 }
 
+/* ===== HEADER GRÁFICA CON NAVEGACIÓN ===== */
+.admin-grafica-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.admin-grafica-nav {
+  display: flex;
+  gap: 6px;
+}
+
+/* ===== BOTÓN EXCEL ===== */
+.boton-excel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(39,174,96,0.15);
+  border: 1px solid rgba(39,174,96,0.4);
+  color: #27ae60;
+  font-size: 12px;
+  letter-spacing: 1px;
+  font-family: 'Barlow', sans-serif;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 10px;
+  width: 100%;
+  justify-content: center;
+}
+
+.boton-excel:hover {
+  background: rgba(39,174,96,0.25);
+}
+
+/* ===== FILTROS ===== */
+.admin-filtros {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (min-width: 600px) {
   .hero-titulo { font-size: 110px; }
