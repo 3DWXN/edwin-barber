@@ -445,10 +445,12 @@ window.cambiarEstadoCita = async function (select) {
   const resultado = await actualizarEstadoCita(id, nuevoEstado)
   select.disabled = false
   if (resultado.exito) {
-    // Actualizar color del card visualmente
     const card = select.closest('.agenda-cita-card')
-    if (card) {
-      card.className = `agenda-cita-card estado-${nuevoEstado}`
+    if (card) card.className = `agenda-cita-card estado-${nuevoEstado}`
+    // Si confirma, abrir WhatsApp con mensaje listo
+    if (nuevoEstado === 'confirmada') {
+      const cita = extraerDatosCitaDeCard(card, id)
+      abrirWhatsAppConfirmacion(cita)
     }
   } else {
     alert('Error al actualizar el estado.')
@@ -520,10 +522,51 @@ window.cambiarEstadoDesdeListado = async function (select) {
     const card = select.closest('.admin-cita-card-full')
     if (card) card.className = `admin-cita-card-full estado-${nuevoEstado}`
     const cita = todasCitas.find(c => c.id === id)
-    if (cita) cita.estado = nuevoEstado
+    if (cita) {
+      cita.estado = nuevoEstado
+      if (nuevoEstado === 'confirmada') abrirWhatsAppConfirmacion(cita)
+    }
   } else {
     alert('Error al actualizar el estado.')
   }
+}
+
+// ================================================================
+// WHATSAPP — MENSAJE DE CONFIRMACIÓN
+// ================================================================
+function extraerDatosCitaDeCard (card, id) {
+  // Extrae nombre, servicio, teléfono del card visual de la agenda
+  const nombre = card.querySelector('.agenda-cita-nombre')?.textContent || ''
+  const servicio = card.querySelector('.agenda-cita-servicio')?.textContent || ''
+  const telefonoEl = card.querySelector('p[style]')
+  const telefonoRaw = telefonoEl?.textContent?.replace('📱', '').trim() || ''
+  const telefono = telefonoRaw === '—' ? '' : telefonoRaw
+  // Hora la tomamos del slot padre
+  const slot = card.closest('.agenda-slot')
+  const hora = slot?.querySelector('.agenda-slot-hora')?.textContent || ''
+  // Fecha de la agenda activa
+  const fecha = fechaLocal(fechaAgenda)
+  const fechaFmt = fechaAgenda.toLocaleDateString('es', {
+    weekday: 'long', day: 'numeric', month: 'long'
+  })
+  return { id, nombre, servicio, telefono, hora, fecha, fechaFmt }
+}
+
+function abrirWhatsAppConfirmacion (cita) {
+  if (!cita.telefono) return // sin teléfono no podemos abrir
+  const fechaFmt = cita.fechaFmt || (() => {
+    const d = new Date(cita.fecha + 'T12:00:00')
+    return d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
+  })()
+  const mensaje =
+    `Hola ${cita.nombre} 👋, te confirmo tu cita:\n\n` +
+    `✂️ Servicio: ${cita.servicio}\n` +
+    `📅 Fecha: ${fechaFmt}\n` +
+    `🕐 Hora: ${cita.hora}\n\n` +
+    `Si necesitas cancelar, avísame con al menos 1 hora de anticipación.\n` +
+    `¡Te espero! 💈`
+  const telefono = cita.telefono.startsWith('57') ? cita.telefono : `57${cita.telefono}`
+  window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank')
 }
 
 // ================================================================
@@ -937,3 +980,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 })
+
