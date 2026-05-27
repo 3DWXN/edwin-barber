@@ -3,7 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edwin Barber</title>
+  <title>Edwin Barber — Barbero Profesional en Jamundí, Valle del Cauca</title>
+  <meta name="description" content="Barbero profesional en Jamundí, Valle del Cauca. Cortes, barba, cejas, masajes y Experiencia Gold. Agenda tu cita online fácil y rápido.">
+  <meta name="keywords" content="barbero Jamundí, barbería Jamundí, corte de cabello Jamundí, barbero Valle del Cauca, Edwin Barber, citas barbería">
+  <meta name="author" content="Edwin Barber">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://3dwxn.github.io/edwin-barber/">
+  <!-- Open Graph (WhatsApp, Facebook, Instagram) -->
+  <meta property="og:title" content="Edwin Barber — Barbero Profesional en Jamundí">
+  <meta property="og:description" content="Cortes, barba, cejas y más. Agenda tu cita online en segundos.">
+  <meta property="og:image" content="images/barberia.webp">
+  <meta property="og:url" content="https://3dwxn.github.io/edwin-barber/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_CO">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Edwin Barber — Barbero Profesional en Jamundí">
+  <meta name="twitter:description" content="Cortes, barba, cejas y más. Agenda tu cita online.">
+  <meta name="twitter:image" content="images/barberia.webp">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;600&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <!-- Google Analytics -->
@@ -45,6 +62,7 @@
     <div class="nav-menu" id="nav-menu">
       <ul class="nav-links">
         <li><a href="#inicio" onclick="cerrarMenu()">Inicio</a></li>
+        <li><a href="#sobre-mi" onclick="cerrarMenu()">Sobre mí</a></li>
         <li><a href="#servicios" onclick="cerrarMenu()">Servicios</a></li>
         <li><a href="#galeria" onclick="cerrarMenu()">Galería</a></li>
         <li><a href="#resenas" onclick="cerrarMenu()">Reseñas</a></li>
@@ -102,6 +120,39 @@
         <span class="porque-icono">📅</span>
         <h3 class="porque-titulo">Tu tiempo, tu horario</h3>
         <p class="porque-texto">Reserva tu cita en segundos desde aquí. Sin llamadas, sin esperas. Solo tú y tu estilo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOBRE MÍ -->
+  <section class="sobre-mi" id="sobre-mi">
+    <div class="sobre-mi-contenido revelar">
+      <div class="sobre-mi-foto-wrap">
+        <img src="images/barberia.webp" alt="Edwin Barber — Ambiente de la barbería" class="sobre-mi-foto">
+        <div class="sobre-mi-foto-badge">✦ XP Gold</div>
+      </div>
+      <div class="sobre-mi-texto">
+        <p class="sobre-mi-eyebrow">✦ Mi historia</p>
+        <h2 class="sobre-mi-titulo">Más que un corte,<br><em>una experiencia</em></h2>
+        <p class="sobre-mi-parrafo">Soy Edwin, barbero profesional con sede en Jamundí, Valle del Cauca. Me especializo en cortes de precisión, diseño de barba y una atención que va más allá de la silla.</p>
+        <p class="sobre-mi-parrafo">Cada cliente es diferente — por eso cada servicio es personalizado. Desde el corte más sencillo hasta la Experiencia Gold, el detalle siempre es lo primero.</p>
+        <div class="sobre-mi-stats">
+          <div class="sobre-mi-stat">
+            <span class="sobre-mi-stat-num">1500+</span>
+            <span class="sobre-mi-stat-label">Clientes</span>
+          </div>
+          <div class="sobre-mi-stat-div"></div>
+          <div class="sobre-mi-stat">
+            <span class="sobre-mi-stat-num">XP Gold</span>
+            <span class="sobre-mi-stat-label">Certificación</span>
+          </div>
+          <div class="sobre-mi-stat-div"></div>
+          <div class="sobre-mi-stat">
+            <span class="sobre-mi-stat-num">100%</span>
+            <span class="sobre-mi-stat-label">Dedicación</span>
+          </div>
+        </div>
+        <button class="boton-principal" style="max-width:280px;" onclick="abrirCitas()">Agenda tu cita →</button>
       </div>
     </div>
   </section>
@@ -399,6 +450,13 @@
         <button class="admin-fecha-btn" onclick="cambiarFechaAgenda(1)">›</button>
       </div>
 
+      <!-- Botón bloquear/desbloquear -->
+      <div id="agenda-bloqueo-wrap" style="margin-bottom:14px; text-align:center;">
+        <button class="boton-bloquear" id="btn-bloquear-fecha" onclick="toggleBloquearFecha()">
+          🔒 Bloquear este día
+        </button>
+      </div>
+
       <!-- Leyenda -->
       <div class="agenda-leyenda">
         <span class="leyenda-item"><span class="leyenda-dot leyenda-pendiente"></span>Pendiente</span>
@@ -583,7 +641,7 @@
   <!-- ============================================================ -->
   <!-- MODAL EXPORTAR EXCEL -->
   <!-- ============================================================ -->
-  <div class="modal-overlay" id="modal-excel" onclick="cerrarExportarExcel()">
+  <div class="modal-overlay modal-excel-overlay" id="modal-excel" onclick="cerrarExportarExcel()">
     <div class="modal-contenido" onclick="event.stopPropagation()">
       <button class="modal-cerrar" onclick="cerrarExportarExcel()">✕</button>
       <div class="modal-icono">📊</div>

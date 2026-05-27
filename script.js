@@ -436,7 +436,7 @@ window.generarExcel = async function () {
     { wch: 22 }, { wch: 30 }, { wch: 18 }, { wch: 12 }, { wch: 12 }
   ]
 
-  // ===== HOJA 2: DATOS PARA GRÁFICA (ingresos por fecha) =====
+  // ===== HOJA 2: INGRESOS POR DÍA CON TOTAL Y GUÍA DE GRÁFICA =====
   const mapaFechas = {}
   citas.forEach(c => {
     if (c.fecha) {
@@ -454,7 +454,22 @@ window.generarExcel = async function () {
     datos.total
   ])
 
-  const datosHoja2 = [encabezadosGrafica, ...filasGrafica]
+  const totalCitasGeneral = filasGrafica.reduce((s, f) => s + f[2], 0)
+  const totalIngresosGeneral = filasGrafica.reduce((s, f) => s + f[3], 0)
+  const filaTotalGrafica = ['', 'TOTAL', totalCitasGeneral, totalIngresosGeneral]
+
+  const numFilasDatos = filasGrafica.length
+
+  // Guía para crear la gráfica en Excel
+  const guia = [
+    [],
+    ['📊 CÓMO CREAR LA GRÁFICA EN EXCEL:'],
+    ['1. Selecciona las columnas B (Día) y D (Ingresos) desde la fila 2 hasta la fila ' + (numFilasDatos + 1)],
+    ['2. Ve a "Insertar" → "Gráfico de columnas" → "Columna agrupada"'],
+    ['3. ¡Listo! Tendrás la gráfica de ingresos por día'],
+  ]
+
+  const datosHoja2 = [encabezadosGrafica, ...filasGrafica, [], filaTotalGrafica, ...guia]
   const hoja2 = XLSX.utils.aoa_to_sheet(datosHoja2)
   hoja2['!cols'] = [{ wch: 14 }, { wch: 30 }, { wch: 18 }, { wch: 14 }]
 
@@ -708,6 +723,9 @@ window.abrirServicio = function (id) {
     li.textContent = item
     lista.appendChild(li)
   })
+  // Guardar el nombre del servicio en el botón para pasarlo al abrir citas
+  const btnAgendar = document.querySelector('#modal-servicio .boton-principal')
+  if (btnAgendar) btnAgendar.onclick = () => { cerrarModal(); abrirCitas(s.titulo) }
   document.getElementById('modal-servicio').classList.add('abierto')
   document.body.style.overflow = 'hidden'
 }
@@ -720,7 +738,7 @@ window.cerrarModal = function () {
 // ================================================================
 // MODAL CITAS
 // ================================================================
-window.abrirCitas = function () {
+window.abrirCitas = function (servicioPreseleccionado = null) {
   fechaSeleccionada = null
   horaSeleccionada = null
   document.getElementById('modal-citas').classList.add('abierto')
@@ -728,6 +746,21 @@ window.abrirCitas = function () {
   document.getElementById('seccion-calendario').style.display = 'none'
   document.getElementById('seccion-horas').style.display = 'none'
   document.getElementById('boton-agendar').style.display = 'none'
+
+  // Preseleccionar servicio si viene desde una tarjeta
+  const selectServicio = document.getElementById('cita-servicio')
+  if (servicioPreseleccionado && selectServicio) {
+    // Buscar la opción que coincida
+    const opcion = Array.from(selectServicio.options).find(o =>
+      o.value === servicioPreseleccionado || o.value.startsWith(servicioPreseleccionado)
+    )
+    if (opcion) {
+      selectServicio.value = opcion.value
+      selectServicio.dispatchEvent(new Event('change'))
+    }
+  } else if (selectServicio) {
+    selectServicio.value = ''
+  }
 }
 
 window.cerrarCitas = function () {
@@ -1083,6 +1116,17 @@ document.addEventListener('DOMContentLoaded', () => {
     boton.disabled = false
     actualizarTotal()
   })
+
+  // Botón flotante — aparece solo cuando el hero sale de la vista
+  const hero = document.getElementById('inicio')
+  const btnFlotante = document.querySelector('.boton-flotante')
+
+  const observadorHero = new IntersectionObserver((entradas) => {
+    const heroVisible = entradas[0].isIntersecting
+    btnFlotante.classList.toggle('visible', !heroVisible)
+  }, { threshold: 0.1 })
+
+  if (hero) observadorHero.observe(hero)
 
   // Scroll animaciones
   const observador = new IntersectionObserver((entradas) => {

@@ -5,6 +5,8 @@ import {
   addDoc,
   getDocs,
   getDoc,
+  setDoc,
+  deleteDoc,
   updateDoc,
   doc,
   query,
@@ -300,6 +302,51 @@ export async function obtenerResenas() {
     const resenas = []
     snapshot.forEach(doc => resenas.push({ id: doc.id, ...doc.data() }))
     return resenas
+  } catch (error) {
+    return []
+  }
+}
+
+// ================================================================
+// BLOQUEO DE FECHAS
+// ================================================================
+export async function bloquearFecha(fecha, motivo = '') {
+  try {
+    await setDoc(doc(db, "fechas_bloqueadas", fecha), {
+      fecha,
+      motivo,
+      timestamp: serverTimestamp()
+    })
+    return { exito: true }
+  } catch (error) {
+    return { exito: false, error: error.message }
+  }
+}
+
+export async function desbloquearFecha(fecha) {
+  try {
+    await deleteDoc(doc(db, "fechas_bloqueadas", fecha))
+    return { exito: true }
+  } catch (error) {
+    return { exito: false, error: error.message }
+  }
+}
+
+export async function estaFechaBloqueada(fecha) {
+  try {
+    const docSnap = await getDoc(doc(db, "fechas_bloqueadas", fecha))
+    return docSnap.exists()
+  } catch (error) {
+    return false
+  }
+}
+
+export async function obtenerFechasBloqueadas() {
+  try {
+    const snapshot = await getDocs(collection(db, "fechas_bloqueadas"))
+    const fechas = []
+    snapshot.forEach(d => fechas.push(d.data().fecha))
+    return fechas
   } catch (error) {
     return []
   }
