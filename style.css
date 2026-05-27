@@ -1953,6 +1953,155 @@ body {
   gap: 6px;
 }
 
+/* ===================================================
+   PANEL DISPONIBILIDAD
+=================================================== */
+.disp-seccion {
+  margin-bottom: 32px;
+}
+
+.disp-titulo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  color: #ffffff;
+  letter-spacing: 3px;
+  margin-bottom: 4px;
+}
+
+.disp-sub {
+  font-size: 12px;
+  color: #5d8aa8;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.disp-dias-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.disp-dia-card {
+  background-color: #0c1a28;
+  border: 1px solid #1e3a52;
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: border-color 0.2s;
+}
+
+.disp-dia-card.activo {
+  border-color: #27ae60;
+}
+
+.disp-dia-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.disp-dia-nombre {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  color: #ffffff;
+  letter-spacing: 2px;
+}
+
+/* Toggle switch */
+.disp-toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.disp-toggle input { opacity: 0; width: 0; height: 0; }
+
+.disp-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background-color: #1e3a52;
+  border-radius: 24px;
+  transition: 0.3s;
+}
+
+.disp-toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #5d8aa8;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.disp-toggle input:checked + .disp-toggle-slider {
+  background-color: #27ae60;
+}
+
+.disp-toggle input:checked + .disp-toggle-slider::before {
+  transform: translateX(20px);
+  background-color: #ffffff;
+}
+
+.disp-horas-wrap {
+  margin-top: 12px;
+  animation: fadeIn 0.2s ease;
+}
+
+.disp-horas-input {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Bloqueo de fechas */
+.disp-bloqueo-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.disp-fechas-bloqueadas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.disp-fecha-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(192,57,43,0.12);
+  border: 1px solid rgba(192,57,43,0.35);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #e74c3c;
+}
+
+.disp-chip-del {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.disp-chip-del:hover { opacity: 1; }
+
+@media (min-width: 600px) {
+  .disp-dias-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* Modal Excel encima del panel admin */
 .modal-excel-overlay {
   z-index: 600 !important;

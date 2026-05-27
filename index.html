@@ -388,7 +388,8 @@
     <div class="admin-tabs">
       <button class="admin-tab activo" onclick="cambiarTab('dashboard')">📊 Dashboard</button>
       <button class="admin-tab" onclick="cambiarTab('agenda')">📅 Agenda</button>
-      <button class="admin-tab" onclick="cambiarTab('citas')">📋 Todas las citas</button>
+      <button class="admin-tab" onclick="cambiarTab('citas')">📋 Citas</button>
+      <button class="admin-tab" onclick="cambiarTab('disponibilidad')">⚙️ Disponibilidad</button>
     </div>
 
     <!-- ===== TAB: DASHBOARD ===== -->
@@ -483,6 +484,9 @@
       </div>
       <div id="todas-citas-lista"></div>
     </div>
+
+    <!-- ===== TAB: DISPONIBILIDAD ===== -->
+    <div class="admin-contenido" id="tab-disponibilidad" style="display:none;"></div>
 
   </div>
 

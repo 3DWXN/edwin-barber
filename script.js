@@ -4,6 +4,7 @@ import {
   obtenerCitasPorTelefono, obtenerTodasLasCitas, obtenerCitasPorFecha,
   obtenerIngresosSemana, obtenerCitasPorRango, obtenerStatsDia, actualizarEstadoCita,
   iniciarSesionAdmin, sesionAdminActiva, cerrarSesionAdmin,
+  bloquearFecha, desbloquearFecha, estaFechaBloqueada, obtenerFechasBloqueadas,
   CONFIG_SLOTS
 } from './firebase.js'
 
@@ -498,6 +499,11 @@ async function cargarAgenda () {
   const timeline = document.getElementById('agenda-timeline')
   timeline.innerHTML = '<p class="cargando">Cargando agenda...</p>'
 
+  // Actualizar botón bloqueo
+  await actualizarBotonBloqueo()
+
+  const bloqueada = await estaFechaBloqueada(fechaStr)
+
   const diaSemana = fechaAgenda.getDay()
   const turnos = diaSemana === 6
     ? CONFIG_SLOTS.sabado.turnos
@@ -511,8 +517,16 @@ async function cargarAgenda () {
 
   timeline.innerHTML = ''
 
+  // Banner de bloqueado
+  if (bloqueada) {
+    const banner = document.createElement('div')
+    banner.className = 'agenda-bloqueado-banner'
+    banner.textContent = '🔒 Este día está bloqueado — los clientes no pueden reservar'
+    timeline.appendChild(banner)
+  }
+
   if (turnos.length === 0) {
-    timeline.innerHTML = '<p class="admin-vacio">Este día no tiene turnos configurados.</p>'
+    timeline.innerHTML += '<p class="admin-vacio">Este día no tiene turnos configurados.</p>'
     return
   }
 
@@ -523,7 +537,7 @@ async function cargarAgenda () {
 
     const lineaHtml = `
       <div class="agenda-slot-linea">
-        <div class="agenda-slot-punto" style="background:${cita ? estadoColor(cita.estado) : '#1e3a52'}"></div>
+        <div class="agenda-slot-punto" style="background:${cita ? estadoColor(cita.estado) : bloqueada ? '#e74c3c44' : '#1e3a52'}"></div>
         ${idx < turnos.length - 1 ? '<div class="agenda-slot-linea-v"></div>' : ''}
       </div>
     `
@@ -551,8 +565,8 @@ async function cargarAgenda () {
       slot.innerHTML = `
         <span class="agenda-slot-hora">${turno}</span>
         ${lineaHtml}
-        <div class="agenda-slot-libre">
-          <span class="agenda-slot-libre-txt">Disponible</span>
+        <div class="agenda-slot-libre" style="${bloqueada ? 'opacity:0.35;' : ''}">
+          <span class="agenda-slot-libre-txt">${bloqueada ? '🔒 Bloqueado' : 'Disponible'}</span>
         </div>
       `
     }
@@ -573,6 +587,44 @@ function estadoColor (estado) {
 window.cambiarFechaAgenda = function (delta) {
   fechaAgenda.setDate(fechaAgenda.getDate() + delta)
   cargarAgenda()
+}
+
+// ================================================================
+// BLOQUEO DE FECHAS
+// ================================================================
+window.toggleBloquearFecha = async function () {
+  const fechaStr = fechaLocal(fechaAgenda)
+  const btn = document.getElementById('btn-bloquear-fecha')
+  btn.disabled = true
+
+  const bloqueada = await estaFechaBloqueada(fechaStr)
+
+  if (bloqueada) {
+    const confirmar = confirm(`¿Desbloquear el ${fechaAgenda.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}? Los clientes podrán reservar de nuevo.`)
+    if (!confirmar) { btn.disabled = false; return }
+    await desbloquearFecha(fechaStr)
+  } else {
+    const confirmar = confirm(`¿Bloquear el ${fechaAgenda.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}? Los clientes NO podrán reservar ese día.`)
+    if (!confirmar) { btn.disabled = false; return }
+    await bloquearFecha(fechaStr)
+  }
+
+  btn.disabled = false
+  cargarAgenda()
+}
+
+async function actualizarBotonBloqueo () {
+  const fechaStr = fechaLocal(fechaAgenda)
+  const btn = document.getElementById('btn-bloquear-fecha')
+  if (!btn) return
+  const bloqueada = await estaFechaBloqueada(fechaStr)
+  if (bloqueada) {
+    btn.textContent = '🔓 Desbloquear este día'
+    btn.classList.add('desbloqueado')
+  } else {
+    btn.textContent = '🔒 Bloquear este día'
+    btn.classList.remove('desbloqueado')
+  }
 }
 
 window.cambiarEstadoCita = async function (select) {
@@ -811,33 +863,53 @@ function actualizarTotal () {
 }
 
 // ================================================================
-// CALENDARIO
+// CALENDARIO (cliente) — respeta fechas bloqueadas y días config
 // ================================================================
-function renderCalendario () {
+async function renderCalendario () {
   const contenedor = document.getElementById('calendario')
+  contenedor.innerHTML = '<p class="cargando">Cargando disponibilidad...</p>'
+
+  const [fechasBloqueadas, config] = await Promise.all([
+    obtenerFechasBloqueadas(),
+    obtenerConfigHorarios()
+  ])
+
   contenedor.innerHTML = ''
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)
-  for (let i = 0; i < 30; i++) {
+
+  let diasMostrados = 0
+  for (let i = 0; i < 60 && diasMostrados < 12; i++) {
     const fecha = new Date(hoy)
     fecha.setDate(hoy.getDate() + i)
     const diaSemana = fecha.getDay()
-    if (diaSemana !== 0 && diaSemana !== 6) continue
+    const nombreCorto = ['dom','lun','mar','mie','jue','vie','sab'][diaSemana]
+    const diaConfig = config[nombreCorto]
+    if (!diaConfig || !diaConfig.activo) continue
+
+    const fechaStr = fechaLocal(fecha)
+    const bloqueada = fechasBloqueadas.includes(fechaStr)
+    if (bloqueada) continue // no mostrar días bloqueados al cliente
+
     const dia = document.createElement('div')
     dia.className = 'cal-dia'
-    const nombreDia = diaSemana === 6 ? 'Sáb' : 'Dom'
-    const fechaStr = fechaLocal(fecha)
+    const nombreDia = fecha.toLocaleString('es', { weekday: 'short' })
     dia.innerHTML = `
       <span class="cal-nombre">${nombreDia}</span>
       <span class="cal-numero">${fecha.getDate()}</span>
       <span class="cal-mes">${fecha.toLocaleString('es', { month: 'short' })}</span>
     `
-    dia.addEventListener('click', () => seleccionarFecha(fechaStr, diaSemana, dia))
+    dia.addEventListener('click', () => seleccionarFecha(fechaStr, diaSemana, dia, diaConfig.horas))
     contenedor.appendChild(dia)
+    diasMostrados++
+  }
+
+  if (diasMostrados === 0) {
+    contenedor.innerHTML = '<p class="cargando">No hay días disponibles por el momento.</p>'
   }
 }
 
-async function seleccionarFecha (fechaStr, diaSemana, elemento) {
+async function seleccionarFecha (fechaStr, diaSemana, elemento, horasConfig = null) {
   document.querySelectorAll('.cal-dia').forEach(d => d.classList.remove('seleccionado'))
   elemento.classList.add('seleccionado')
   fechaSeleccionada = fechaStr
@@ -847,7 +919,8 @@ async function seleccionarFecha (fechaStr, diaSemana, elemento) {
   contenedorHoras.innerHTML = '<p class="cargando">Cargando horas disponibles...</p>'
   document.getElementById('seccion-horas').style.display = 'block'
   const horasOcupadas = await obtenerHorasOcupadas(fechaStr)
-  const turnos = diaSemana === 6 ? CONFIG_SLOTS.sabado.turnos : CONFIG_SLOTS.domingo.turnos
+  // Usar horas de la config si vienen, si no usar CONFIG_SLOTS legacy
+  const turnos = horasConfig || (diaSemana === 6 ? CONFIG_SLOTS.sabado.turnos : CONFIG_SLOTS.domingo.turnos)
   const ahora = new Date()
   const esHoy = fechaStr === fechaLocal(new Date())
   contenedorHoras.innerHTML = ''
@@ -945,6 +1018,172 @@ async function cargarResenas () {
     if (!isDragging) return
     carrusel.scrollLeft = scrollLeft - (e.pageX - carrusel.offsetLeft - startX) * 1.5
   })
+}
+
+// ================================================================
+// CONFIGURACIÓN DE HORARIOS (desde Firebase)
+// ================================================================
+const CONFIG_HORARIOS_DEFAULT = {
+  sab: { activo: true,  nombre: 'Sábado',    horas: CONFIG_SLOTS.sabado.turnos },
+  dom: { activo: true,  nombre: 'Domingo',   horas: CONFIG_SLOTS.domingo.turnos },
+  lun: { activo: false, nombre: 'Lunes',     horas: [] },
+  mar: { activo: false, nombre: 'Martes',    horas: [] },
+  mie: { activo: false, nombre: 'Miércoles', horas: [] },
+  jue: { activo: false, nombre: 'Jueves',    horas: [] },
+  vie: { activo: false, nombre: 'Viernes',   horas: [] },
+}
+
+// Cache local de la config
+let configHorarios = null
+
+async function obtenerConfigHorarios () {
+  if (configHorarios) return configHorarios
+  try {
+    const { getDoc, doc, getFirestore } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js')
+    // Intentar leer desde Firestore
+    const snap = await getDoc(doc(getFirestore(), 'config', 'horarios'))
+    configHorarios = snap.exists() ? snap.data() : CONFIG_HORARIOS_DEFAULT
+  } catch (e) {
+    configHorarios = CONFIG_HORARIOS_DEFAULT
+  }
+  return configHorarios
+}
+
+async function guardarConfigHorarios (config) {
+  try {
+    const { setDoc, doc, getFirestore } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js')
+    await setDoc(doc(getFirestore(), 'config', 'horarios'), config)
+    configHorarios = config // actualizar cache
+    return true
+  } catch (e) { return false }
+}
+
+// ================================================================
+// PANEL DISPONIBILIDAD ADMIN
+// ================================================================
+window.cambiarTab = function (tab) {
+  ;['dashboard', 'agenda', 'citas', 'disponibilidad'].forEach(t => {
+    const el = document.getElementById(`tab-${t}`)
+    if (el) el.style.display = t === tab ? 'block' : 'none'
+  })
+  document.querySelectorAll('.admin-tab').forEach((btn, i) => {
+    btn.classList.toggle('activo', ['dashboard', 'agenda', 'citas', 'disponibilidad'][i] === tab)
+  })
+  if (tab === 'dashboard') cargarDashboard()
+  if (tab === 'agenda') cargarAgenda()
+  if (tab === 'citas') cargarTodasCitas()
+  if (tab === 'disponibilidad') cargarPanelDisponibilidad()
+}
+
+async function cargarPanelDisponibilidad () {
+  const contenedor = document.getElementById('tab-disponibilidad')
+  contenedor.innerHTML = '<p class="cargando">Cargando configuración...</p>'
+
+  const [config, bloqueadas] = await Promise.all([
+    obtenerConfigHorarios(),
+    obtenerFechasBloqueadas()
+  ])
+
+  const dias = ['lun','mar','mie','jue','vie','sab','dom']
+  const hoy = new Date()
+
+  let html = `
+    <div class="disp-seccion">
+      <h3 class="disp-titulo">📅 Días y horarios de trabajo</h3>
+      <p class="disp-sub">Activa los días que trabajas y define las horas disponibles.</p>
+      <div class="disp-dias-grid" id="disp-dias-grid">
+  `
+
+  dias.forEach(d => {
+    const diaConf = config[d] || { activo: false, nombre: d, horas: [] }
+    html += `
+      <div class="disp-dia-card ${diaConf.activo ? 'activo' : ''}" id="dcard-${d}">
+        <div class="disp-dia-header">
+          <span class="disp-dia-nombre">${diaConf.nombre}</span>
+          <label class="disp-toggle">
+            <input type="checkbox" ${diaConf.activo ? 'checked' : ''} onchange="toggleDia('${d}', this.checked)">
+            <span class="disp-toggle-slider"></span>
+          </label>
+        </div>
+        <div class="disp-horas-wrap" id="dhoras-${d}" style="${diaConf.activo ? '' : 'display:none'}">
+          <textarea class="campo-input disp-horas-input" id="dinput-${d}" 
+            placeholder="2:00 PM, 2:40 PM, 3:20 PM..."
+            rows="3">${(diaConf.horas || []).join(', ')}</textarea>
+          <p class="campo-nota">Separa las horas con coma. Formato: 2:00 PM</p>
+        </div>
+      </div>
+    `
+  })
+
+  html += `</div>
+    <button class="boton-principal" style="max-width:300px;margin:20px auto;display:block;" onclick="guardarHorarios()">
+      💾 Guardar horarios
+    </button>
+  </div>
+
+  <div class="disp-seccion">
+    <h3 class="disp-titulo">🔒 Bloquear fechas específicas</h3>
+    <p class="disp-sub">Bloquea días puntuales (vacaciones, festivos, etc). Los clientes no podrán reservar esos días.</p>
+
+    <div class="disp-bloqueo-form">
+      <input class="campo-input" type="date" id="input-fecha-bloquear" style="max-width:200px;">
+      <button class="boton-principal" style="max-width:160px;" onclick="agregarFechaBloqueada()">+ Bloquear</button>
+    </div>
+
+    <div class="disp-fechas-bloqueadas" id="disp-fechas-bloqueadas">
+      ${bloqueadas.length === 0
+        ? '<p class="admin-vacio">No hay fechas bloqueadas.</p>'
+        : bloqueadas.sort().map(f => `
+          <div class="disp-fecha-chip">
+            <span>${new Date(f + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            <button class="disp-chip-del" onclick="quitarFechaBloqueada('${f}')">✕</button>
+          </div>
+        `).join('')
+      }
+    </div>
+  </div>`
+
+  contenedor.innerHTML = html
+}
+
+window.toggleDia = function (dia, activo) {
+  const card = document.getElementById(`dcard-${dia}`)
+  const wrap = document.getElementById(`dhoras-${dia}`)
+  card.classList.toggle('activo', activo)
+  wrap.style.display = activo ? 'block' : 'none'
+}
+
+window.guardarHorarios = async function () {
+  const dias = ['lun','mar','mie','jue','vie','sab','dom']
+  const nombres = { lun:'Lunes', mar:'Martes', mie:'Miércoles', jue:'Jueves', vie:'Viernes', sab:'Sábado', dom:'Domingo' }
+  const nueva = {}
+  dias.forEach(d => {
+    const cb = document.querySelector(`#dcard-${d} input[type=checkbox]`)
+    const activo = cb ? cb.checked : false
+    const inputVal = document.getElementById(`dinput-${d}`)?.value || ''
+    const horas = inputVal.split(',').map(h => h.trim()).filter(h => h.length > 0)
+    nueva[d] = { activo, nombre: nombres[d], horas }
+  })
+  const ok = await guardarConfigHorarios(nueva)
+  if (ok) {
+    alert('✅ Horarios guardados correctamente.')
+  } else {
+    alert('Hubo un error al guardar. Intenta de nuevo.')
+  }
+}
+
+window.agregarFechaBloqueada = async function () {
+  const input = document.getElementById('input-fecha-bloquear')
+  const fecha = input.value
+  if (!fecha) { alert('Selecciona una fecha.'); return }
+  await bloquearFecha(fecha)
+  input.value = ''
+  cargarPanelDisponibilidad()
+}
+
+window.quitarFechaBloqueada = async function (fecha) {
+  await desbloquearFecha(fecha)
+  cargarPanelDisponibilidad()
 }
 
 // ================================================================
