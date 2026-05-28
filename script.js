@@ -5,6 +5,7 @@ import {
   obtenerIngresosSemana, obtenerCitasPorRango, obtenerStatsDia, actualizarEstadoCita,
   iniciarSesionAdmin, sesionAdminActiva, cerrarSesionAdmin,
   bloquearFecha, desbloquearFecha, estaFechaBloqueada, obtenerFechasBloqueadas,
+  obtenerConfigHorariosDB, guardarConfigHorariosDB,
   CONFIG_SLOTS
 } from './firebase.js'
 
@@ -1038,24 +1039,15 @@ let configHorarios = null
 
 async function obtenerConfigHorarios () {
   if (configHorarios) return configHorarios
-  try {
-    const { getDoc, doc, getFirestore } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js')
-    // Intentar leer desde Firestore
-    const snap = await getDoc(doc(getFirestore(), 'config', 'horarios'))
-    configHorarios = snap.exists() ? snap.data() : CONFIG_HORARIOS_DEFAULT
-  } catch (e) {
-    configHorarios = CONFIG_HORARIOS_DEFAULT
-  }
+  const data = await obtenerConfigHorariosDB()
+  configHorarios = data || CONFIG_HORARIOS_DEFAULT
   return configHorarios
 }
 
 async function guardarConfigHorarios (config) {
-  try {
-    const { setDoc, doc, getFirestore } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js')
-    await setDoc(doc(getFirestore(), 'config', 'horarios'), config)
-    configHorarios = config // actualizar cache
-    return true
-  } catch (e) { return false }
+  const ok = await guardarConfigHorariosDB(config)
+  if (ok) configHorarios = config
+  return ok
 }
 
 // ================================================================

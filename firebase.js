@@ -308,6 +308,27 @@ export async function obtenerResenas() {
 }
 
 // ================================================================
+// CONFIGURACIÓN DE HORARIOS
+// ================================================================
+export async function obtenerConfigHorariosDB() {
+  try {
+    const docSnap = await getDoc(doc(db, 'config', 'horarios'))
+    return docSnap.exists() ? docSnap.data() : null
+  } catch (error) {
+    return null
+  }
+}
+
+export async function guardarConfigHorariosDB(config) {
+  try {
+    await setDoc(doc(db, 'config', 'horarios'), config)
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
+// ================================================================
 // BLOQUEO DE FECHAS
 // ================================================================
 export async function bloquearFecha(fecha, motivo = '') {
