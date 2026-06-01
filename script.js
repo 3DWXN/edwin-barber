@@ -756,7 +756,13 @@ function abrirWhatsAppConfirmacion (cita) {
     `Si necesitas cancelar, avísame con al menos 1 hora de anticipación.\n` +
     `¡Te espero! 💈`
   const telefono = cita.telefono.startsWith('57') ? cita.telefono : `57${cita.telefono}`
-  window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank')
+  const enlace = document.createElement('a')
+  enlace.href = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`
+  enlace.target = '_blank'
+  enlace.rel = 'noopener'
+  document.body.appendChild(enlace)
+  enlace.click()
+  document.body.removeChild(enlace)
 }
 
 // ================================================================
@@ -1286,7 +1292,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (this.value === 'A domicilio (+$8.000)') {
       cerrarCitas()
       const msg = `Hola Edwin ✂️, quiero solicitar un *servicio a domicilio*. ¿Tienes disponibilidad? ¿Cuál es tu zona de cobertura?`
-      window.open(`https://wa.me/573173475482?text=${encodeURIComponent(msg)}`, '_blank')
+      const urlWA = `https://wa.me/573173475482?text=${encodeURIComponent(msg)}`
+      const enlace = document.createElement('a')
+      enlace.href = urlWA
+      enlace.target = '_blank'
+      enlace.rel = 'noopener'
+      document.body.appendChild(enlace)
+      enlace.click()
+      document.body.removeChild(enlace)
       this.value = ''
     }
     actualizarTotal()
@@ -1335,12 +1348,20 @@ document.addEventListener('DOMContentLoaded', () => {
         `📍 Ubicación: ${datos.ubicacion}\n📅 Fecha: ${fechaFmt}\n` +
         `🕐 Hora: ${datos.hora}\n💰 Total: $${total.toLocaleString()}\n\n` +
         `¿Queda confirmada la cita?`
+      const urlWA = `https://wa.me/573173475482?text=${encodeURIComponent(mensaje)}`
       cerrarCitas()
       this.reset()
       document.getElementById('seccion-horas').style.display = 'none'
       document.getElementById('seccion-calendario').style.display = 'none'
       document.getElementById('boton-agendar').style.display = 'none'
-      window.open(`https://wa.me/573173475482?text=${encodeURIComponent(mensaje)}`, '_blank')
+      // Fix Safari/iPhone: usar enlace <a> directo en vez de window.open
+      const enlace = document.createElement('a')
+      enlace.href = urlWA
+      enlace.target = '_blank'
+      enlace.rel = 'noopener'
+      document.body.appendChild(enlace)
+      enlace.click()
+      document.body.removeChild(enlace)
     } else {
       alert('Hubo un error. Intenta de nuevo.')
     }
