@@ -742,8 +742,24 @@ function extraerDatosCitaDeCard (card, id) {
   return { id, nombre, servicio, telefono, hora, fecha, fechaFmt }
 }
 
+function abrirWhatsApp (url) {
+  // Funciona en Safari/iPhone sin ser bloqueado como popup
+  const enlace = document.createElement('a')
+  enlace.href = url
+  enlace.target = '_blank'
+  enlace.rel = 'noopener noreferrer'
+  document.body.appendChild(enlace)
+  enlace.click()
+  setTimeout(() => document.body.removeChild(enlace), 300)
+}
+
+window.agendarDomicilio = function () {
+  const msg = `Hola Edwin ✂️, quiero agendar un *servicio a domicilio*. ¿Tienes disponibilidad? ¿Cuál es tu zona de cobertura?`
+  abrirWhatsApp(`https://wa.me/573173475482?text=${encodeURIComponent(msg)}`)
+}
+
 function abrirWhatsAppConfirmacion (cita) {
-  if (!cita.telefono) return // sin teléfono no podemos abrir
+  if (!cita.telefono) return
   const fechaFmt = cita.fechaFmt || (() => {
     const d = new Date(cita.fecha + 'T12:00:00')
     return d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -756,13 +772,7 @@ function abrirWhatsAppConfirmacion (cita) {
     `Si necesitas cancelar, avísame con al menos 1 hora de anticipación.\n` +
     `¡Te espero! 💈`
   const telefono = cita.telefono.startsWith('57') ? cita.telefono : `57${cita.telefono}`
-  const enlace = document.createElement('a')
-  enlace.href = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`
-  enlace.target = '_blank'
-  enlace.rel = 'noopener'
-  document.body.appendChild(enlace)
-  enlace.click()
-  document.body.removeChild(enlace)
+  abrirWhatsApp(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`)
 }
 
 // ================================================================
@@ -1292,14 +1302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (this.value === 'A domicilio (+$8.000)') {
       cerrarCitas()
       const msg = `Hola Edwin ✂️, quiero solicitar un *servicio a domicilio*. ¿Tienes disponibilidad? ¿Cuál es tu zona de cobertura?`
-      const urlWA = `https://wa.me/573173475482?text=${encodeURIComponent(msg)}`
-      const enlace = document.createElement('a')
-      enlace.href = urlWA
-      enlace.target = '_blank'
-      enlace.rel = 'noopener'
-      document.body.appendChild(enlace)
-      enlace.click()
-      document.body.removeChild(enlace)
+      abrirWhatsApp(`https://wa.me/573173475482?text=${encodeURIComponent(msg)}`)
       this.value = ''
     }
     actualizarTotal()
@@ -1354,7 +1357,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('seccion-horas').style.display = 'none'
       document.getElementById('seccion-calendario').style.display = 'none'
       document.getElementById('boton-agendar').style.display = 'none'
-      // Fix Safari/iPhone: usar enlace <a> directo en vez de window.open
       const enlace = document.createElement('a')
       enlace.href = urlWA
       enlace.target = '_blank'
