@@ -321,9 +321,19 @@ export async function obtenerConfigHorariosDB() {
 
 export async function guardarConfigHorariosDB(config) {
   try {
-    await setDoc(doc(db, 'config', 'horarios'), config)
+    // Serializar arrays a strings para compatibilidad con Firestore
+    const configSerializada = {}
+    Object.entries(config).forEach(([dia, datos]) => {
+      configSerializada[dia] = {
+        activo: datos.activo,
+        nombre: datos.nombre,
+        horas: Array.isArray(datos.horas) ? datos.horas : []
+      }
+    })
+    await setDoc(doc(db, 'config', 'horarios'), configSerializada)
     return true
   } catch (error) {
+    console.error('Error guardando config:', error)
     return false
   }
 }
