@@ -1010,7 +1010,7 @@ body {
   border-radius: 8px;
   padding: 12px 16px;
   color: #d6eaf8;
-  font-size: 14px;
+  font-size: 16px; /* Mínimo 16px para evitar zoom en Safari/iPhone */
   font-family: 'Barlow', sans-serif;
   width: 100%;
   outline: none;
