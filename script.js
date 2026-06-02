@@ -1,3 +1,4 @@
+
 // ===== IMPORTAR FIREBASE =====
 import {
   guardarCita, obtenerHorasOcupadas, guardarResena, obtenerResenas,
@@ -772,7 +773,7 @@ function abrirWhatsAppConfirmacion (cita) {
     `Si necesitas cancelar, avísame con al menos 1 hora de anticipación.\n` +
     `¡Te espero! 💈`
   const telefono = cita.telefono.startsWith('57') ? cita.telefono : `57${cita.telefono}`
-  abrirWhatsApp(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`)
+  window.location.href = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`
 }
 
 // ================================================================
