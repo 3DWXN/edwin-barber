@@ -1,4 +1,3 @@
-
 // ===== IMPORTAR FIREBASE =====
 import {
   guardarCita, obtenerHorasOcupadas, guardarResena, obtenerResenas,
@@ -756,7 +755,7 @@ function abrirWhatsApp (url) {
 
 window.agendarDomicilio = function () {
   const msg = `Hola Edwin ✂️, quiero agendar un *servicio a domicilio*. ¿Tienes disponibilidad? ¿Cuál es tu zona de cobertura?`
-  abrirWhatsApp(`https://wa.me/573173475482?text=${encodeURIComponent(msg)}`)
+  window.location.href = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(msg)}`
 }
 
 function abrirWhatsAppConfirmacion (cita) {
@@ -773,7 +772,7 @@ function abrirWhatsAppConfirmacion (cita) {
     `Si necesitas cancelar, avísame con al menos 1 hora de anticipación.\n` +
     `¡Te espero! 💈`
   const telefono = cita.telefono.startsWith('57') ? cita.telefono : `57${cita.telefono}`
-  window.location.href = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`
+  window.location.href = `whatsapp://send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`
 }
 
 // ================================================================
@@ -1244,7 +1243,7 @@ window.confirmarCita = function () {
   const urlWA = `https://wa.me/573173475482?text=${encodeURIComponent(mensaje)}`
 
   // Abrir WhatsApp INMEDIATAMENTE (síncrono, Safari lo permite)
-  window.location.href = urlWA
+  window.location.href = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(mensaje)}`
 
   // Guardar en Firebase en paralelo (no bloqueante)
   guardarCita(datos).then(resultado => {
