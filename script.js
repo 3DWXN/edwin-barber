@@ -5,7 +5,7 @@ import {
   obtenerIngresosSemana, obtenerCitasPorRango, obtenerStatsDia, actualizarEstadoCita,
   iniciarSesionAdmin, sesionAdminActiva, cerrarSesionAdmin,
   bloquearFecha, desbloquearFecha, estaFechaBloqueada, obtenerFechasBloqueadas,
-  obtenerConfigHorariosDB, guardarConfigHorariosDB,
+  obtenerConfigHorariosDB, guardarConfigHorariosDB, cancelarCitaCliente,
   CONFIG_SLOTS
 } from './firebase.js'
 
@@ -181,11 +181,26 @@ async function mostrarPerfilCliente () {
   }
 
   lista.innerHTML = ''
+  const ahora = new Date()
+
   citas.forEach(c => {
     const fechaFmt = c.fecha
       ? new Date(c.fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
       : '—'
     const chipClass = `estado-chip-${c.estado || 'pendiente'}`
+
+    // Calcular si puede cancelar (falta más de 1 hora)
+    let puedeCancelar = false
+    if (c.fecha && c.hora && (c.estado === 'pendiente' || c.estado === 'confirmada')) {
+      const [horaStr, periodo] = c.hora.split(' ')
+      let [h, m] = horaStr.split(':').map(Number)
+      if (periodo === 'PM' && h !== 12) h += 12
+      if (periodo === 'AM' && h === 12) h = 0
+      const fechaCita = new Date(c.fecha + 'T00:00:00')
+      fechaCita.setHours(h, m, 0, 0)
+      puedeCancelar = (fechaCita - ahora) / 60000 > 60
+    }
+
     const card = document.createElement('div')
     card.className = `cita-cliente-card estado-${c.estado || 'pendiente'}`
     card.innerHTML = `
@@ -194,6 +209,14 @@ async function mostrarPerfilCliente () {
       <p class="cita-cliente-hora">🕐 ${c.hora || '—'} · 📍 ${c.ubicacion || '—'}</p>
       ${c.total ? `<p class="cita-cliente-hora">💰 $${c.total.toLocaleString()}</p>` : ''}
       <span class="cita-cliente-estado ${chipClass}">${c.estado || 'pendiente'}</span>
+      ${puedeCancelar ? `
+        <button class="boton-cancelar-cita" onclick="solicitarCancelacion('${c.id}', '${c.servicio}', '${fechaFmt}', '${c.hora || ''}')">
+          Cancelar cita
+        </button>
+      ` : ''}
+      ${!puedeCancelar && (c.estado === 'pendiente' || c.estado === 'confirmada') && c.fecha ? `
+        <p class="cancelar-tarde-msg">Para cancelar escríbenos por WhatsApp</p>
+      ` : ''}
     `
     lista.appendChild(card)
   })
@@ -204,6 +227,63 @@ window.logoutCliente = function () {
   localStorage.removeItem('eb_cliente')
   actualizarBadgeSesion()
   cerrarSesion()
+}
+
+// ================================================================
+// CANCELACIÓN DESDE CLIENTE
+// ================================================================
+window.solicitarCancelacion = function (id, servicio, fechaFmt, hora) {
+  const confirmar = confirm(`¿Seguro que quieres cancelar tu cita?\n\n✂️ ${servicio}\n📅 ${fechaFmt}\n🕐 ${hora}\n\nRecuerda: cancelaciones con menos de 1 hora generan cobro del 50%.`)
+  if (!confirmar) return
+
+  cancelarCitaCliente(id).then(resultado => {
+    if (resultado.exito) {
+      const nombre = sesionCliente.nombre
+      const telefono = sesionCliente.telefono
+      const msg =
+        `Hola Edwin ✂️, soy ${nombre} (${telefono}).\n\n` +
+        `Te aviso que he *cancelado* mi cita:\n\n` +
+        `✂️ Servicio: ${servicio}\n` +
+        `📅 Fecha: ${fechaFmt}\n` +
+        `🕐 Hora: ${hora}\n\n` +
+        `Quedo pendiente para reagendar cuando tengas disponibilidad.`
+      // Actualizar UI
+      mostrarPerfilCliente()
+      // Abrir WhatsApp
+      window.location.href = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(msg)}`
+    } else if (resultado.tiempoAgotado) {
+      alert('⚠️ Ya no puedes cancelar esta cita — falta menos de 1 hora.\n\nEscríbenos directamente por WhatsApp.')
+      window.location.href = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(`Hola Edwin, necesito cancelar mi cita de ${servicio} del ${fechaFmt} a las ${hora}, pero ya no me permite hacerlo desde la app. ¿Podemos arreglarlo?`)}`
+    } else {
+      alert('Hubo un error al cancelar. Intenta de nuevo.')
+    }
+  })
+}
+
+// ================================================================
+// CANCELACIÓN DESDE ADMIN — WhatsApp al cliente
+// ================================================================
+window.cancelarDesdeAdmin = function (id, nombre, servicio, fechaFmt, hora, telefono) {
+  const confirmar = confirm(`¿Cancelar la cita de ${nombre}?\n\n✂️ ${servicio}\n📅 ${fechaFmt}\n🕐 ${hora}`)
+  if (!confirmar) return
+
+  actualizarEstadoCita(id, 'cancelada').then(resultado => {
+    if (resultado.exito) {
+      const msg =
+        `Hola ${nombre} 👋, lamentamos informarte que tu cita ha sido cancelada:\n\n` +
+        `✂️ Servicio: ${servicio}\n` +
+        `📅 Fecha: ${fechaFmt}\n` +
+        `🕐 Hora: ${hora}\n\n` +
+        `Disculpa los inconvenientes. Escríbenos para reagendar cuando gustes. 💈`
+      const tel = telefono.startsWith('57') ? telefono : `57${telefono}`
+      // Actualizar UI
+      cargarAgenda()
+      // Abrir WhatsApp
+      window.location.href = `whatsapp://send?phone=${tel}&text=${encodeURIComponent(msg)}`
+    } else {
+      alert('Error al cancelar la cita.')
+    }
+  })
 }
 
 function actualizarBadgeSesion () {
@@ -544,6 +624,7 @@ async function cargarAgenda () {
     `
 
     if (cita) {
+      const fechaFmtAdmin = fechaAgenda.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
       slot.innerHTML = `
         <span class="agenda-slot-hora">${turno}</span>
         ${lineaHtml}
@@ -560,6 +641,11 @@ async function cargarAgenda () {
             </select>
           </div>
           <p style="font-size:11px;color:#5d8aa8;margin-top:4px;">📱 ${cita.telefono || '—'}</p>
+          ${cita.estado !== 'cancelada' && cita.estado !== 'completada' ? `
+            <button class="boton-cancelar-admin" onclick="cancelarDesdeAdmin('${cita.id}','${cita.nombre}','${cita.servicio}','${fechaFmtAdmin}','${turno}','${cita.telefono || ''}')">
+              ✕ Cancelar y notificar cliente
+            </button>
+          ` : ''}
         </div>
       `
     } else {

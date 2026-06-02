@@ -275,6 +275,46 @@ export async function actualizarEstadoCita(id, nuevoEstado) {
 }
 
 // ================================================================
+// CANCELAR CITA DESDE CLIENTE
+// Verifica que falte más de 1 hora antes de cancelar
+// ================================================================
+export async function cancelarCitaCliente(id) {
+  try {
+    const docSnap = await getDoc(doc(db, "citas", id))
+    if (!docSnap.exists()) return { exito: false, error: 'Cita no encontrada' }
+
+    const cita = docSnap.data()
+
+    // Verificar tiempo límite — debe faltar más de 1 hora
+    if (cita.fecha && cita.hora) {
+      const [horaStr, periodo] = cita.hora.split(' ')
+      let [h, m] = horaStr.split(':').map(Number)
+      if (periodo === 'PM' && h !== 12) h += 12
+      if (periodo === 'AM' && h === 12) h = 0
+
+      const fechaCita = new Date(cita.fecha + 'T00:00:00')
+      fechaCita.setHours(h, m, 0, 0)
+
+      const ahora = new Date()
+      const difMinutos = (fechaCita - ahora) / 60000
+
+      if (difMinutos < 60) {
+        return {
+          exito: false,
+          tiempoAgotado: true,
+          error: 'No puedes cancelar con menos de 1 hora de anticipación'
+        }
+      }
+    }
+
+    await updateDoc(doc(db, "citas", id), { estado: 'cancelada' })
+    return { exito: true, cita }
+  } catch (error) {
+    return { exito: false, error: error.message }
+  }
+}
+
+// ================================================================
 // GUARDAR RESEÑA
 // ================================================================
 export async function guardarResena(datos) {
