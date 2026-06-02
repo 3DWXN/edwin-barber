@@ -1195,6 +1195,72 @@ window.quitarFechaBloqueada = async function (fecha) {
 }
 
 // ================================================================
+// CONFIRMAR CITA — función global (evita bloqueo Safari/iPhone)
+// El onclick síncrono permite abrir WhatsApp sin restricciones
+// ================================================================
+window.confirmarCita = function () {
+  const telefono = document.getElementById('cita-telefono').value
+  if (!telefono.startsWith('3') || telefono.length !== 10) {
+    document.getElementById('error-telefono').innerHTML = '⚠️ Número inválido'
+    document.getElementById('error-telefono').style.display = 'block'
+    return
+  }
+  if (!fechaSeleccionada) { alert('Por favor selecciona un día.'); return }
+  if (!horaSeleccionada) { alert('Por favor selecciona una hora disponible.'); return }
+  if (!document.getElementById('terminos-check').checked) {
+    alert('Debes aceptar los términos y condiciones.')
+    return
+  }
+
+  const boton = document.getElementById('boton-agendar')
+  boton.textContent = 'Agendando...'
+  boton.disabled = true
+
+  const { total, adicionesSeleccionadas } = calcularTotal()
+  const datos = {
+    nombre: document.getElementById('cita-nombre').value,
+    telefono,
+    servicio: document.getElementById('cita-servicio').value,
+    adiciones: adicionesSeleccionadas,
+    ubicacion: document.getElementById('cita-ubicacion').value,
+    fecha: fechaSeleccionada,
+    hora: horaSeleccionada,
+    total
+  }
+
+  const fechaFmt = new Date(fechaSeleccionada + 'T12:00:00').toLocaleDateString('es', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  })
+  const adicionesTexto = adicionesSeleccionadas.length > 0
+    ? `➕ Adiciones: ${adicionesSeleccionadas.join(', ')}\n` : ''
+  const mensaje =
+    `Hola Edwin ✂️, quiero confirmar mi cita.\n\n` +
+    `👤 Nombre: ${datos.nombre}\n📱 Teléfono: ${datos.telefono}\n` +
+    `✂️ Servicio: ${datos.servicio}\n${adicionesTexto}` +
+    `📍 Ubicación: ${datos.ubicacion}\n📅 Fecha: ${fechaFmt}\n` +
+    `🕐 Hora: ${datos.hora}\n💰 Total: $${total.toLocaleString()}\n\n` +
+    `¿Queda confirmada la cita?`
+  const urlWA = `https://wa.me/573173475482?text=${encodeURIComponent(mensaje)}`
+
+  // Abrir WhatsApp INMEDIATAMENTE (síncrono, Safari lo permite)
+  window.location.href = urlWA
+
+  // Guardar en Firebase en paralelo (no bloqueante)
+  guardarCita(datos).then(resultado => {
+    if (!resultado.exito) console.error('Error guardando cita:', resultado.error)
+  })
+
+  // Limpiar UI
+  cerrarCitas()
+  document.getElementById('form-citas').reset()
+  document.getElementById('seccion-horas').style.display = 'none'
+  document.getElementById('seccion-calendario').style.display = 'none'
+  document.getElementById('boton-agendar').style.display = 'none'
+  boton.disabled = false
+  actualizarTotal()
+}
+
+// ================================================================
 // LÓGICA PRINCIPAL — DOMContentLoaded
 // ================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1308,78 +1374,8 @@ document.addEventListener('DOMContentLoaded', () => {
     actualizarTotal()
   })
 
-  // Envío citas
-  document.getElementById('form-citas').addEventListener('submit', async function (e) {
-    e.preventDefault()
-    const telefono = document.getElementById('cita-telefono').value
-    if (!telefono.startsWith('3') || telefono.length !== 10) {
-      document.getElementById('error-telefono').innerHTML = '⚠️ Número inválido'
-      document.getElementById('error-telefono').style.display = 'block'
-      return
-    }
-    if (!fechaSeleccionada) { alert('Por favor selecciona un día.'); return }
-    if (!horaSeleccionada) { alert('Por favor selecciona una hora disponible.'); return }
-    if (!document.getElementById('terminos-check').checked) {
-      alert('Debes aceptar los términos y condiciones.')
-      return
-    }
-    const boton = document.getElementById('boton-agendar')
-    boton.textContent = 'Agendando...'
-    boton.disabled = true
-    const { total, adicionesSeleccionadas } = calcularTotal()
-    const datos = {
-      nombre: document.getElementById('cita-nombre').value,
-      telefono,
-      servicio: document.getElementById('cita-servicio').value,
-      adiciones: adicionesSeleccionadas,
-      ubicacion: document.getElementById('cita-ubicacion').value,
-      fecha: fechaSeleccionada,
-      hora: horaSeleccionada,
-      total
-    }
-
-    // SAFARI FIX: abrir ventana ANTES del await (evento síncrono)
-    // Safari bloquea window.open después de cualquier await
-    const ventana = window.open('', '_blank')
-
-    const resultado = await guardarCita(datos)
-    if (resultado.exito) {
-      const fechaFmt = new Date(fechaSeleccionada + 'T12:00:00').toLocaleDateString('es', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-      })
-      const adicionesTexto = adicionesSeleccionadas.length > 0
-        ? `➕ Adiciones: ${adicionesSeleccionadas.join(', ')}\n` : ''
-      const mensaje =
-        `Hola Edwin ✂️, quiero confirmar mi cita.\n\n` +
-        `👤 Nombre: ${datos.nombre}\n📱 Teléfono: ${datos.telefono}\n` +
-        `✂️ Servicio: ${datos.servicio}\n${adicionesTexto}` +
-        `📍 Ubicación: ${datos.ubicacion}\n📅 Fecha: ${fechaFmt}\n` +
-        `🕐 Hora: ${datos.hora}\n💰 Total: $${total.toLocaleString()}\n\n` +
-        `¿Queda confirmada la cita?`
-      const urlWA = `https://wa.me/573173475482?text=${encodeURIComponent(mensaje)}`
-
-      cerrarCitas()
-      this.reset()
-      document.getElementById('seccion-horas').style.display = 'none'
-      document.getElementById('seccion-calendario').style.display = 'none'
-      document.getElementById('boton-agendar').style.display = 'none'
-
-      // Redirigir la ventana ya abierta a WhatsApp
-      if (ventana) {
-        ventana.location.href = urlWA
-      } else {
-        // Fallback si el popup fue bloqueado
-        window.location.href = urlWA
-      }
-    } else {
-      // Cerrar ventana vacía si hubo error
-      if (ventana) ventana.close()
-      alert('Hubo un error. Intenta de nuevo.')
-    }
-    boton.disabled = false
-    actualizarTotal()
-  })
-
+  // Envío citas — manejado por confirmarCita() en vez de submit
+  // para evitar el bloqueo de Safari/iPhone con window.open después de await
   // Botón flotante — aparece solo cuando el hero sale de la vista
   const hero = document.getElementById('inicio')
   const btnFlotante = document.querySelector('.boton-flotante')
