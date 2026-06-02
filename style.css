@@ -1353,6 +1353,148 @@ body {
 }
 
 /* ===================================================
+   BANNER NOTIFICACIONES
+=================================================== */
+.notif-banner {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 150;
+  width: calc(100% - 32px);
+  max-width: 480px;
+  animation: fadeIn 0.4s ease;
+}
+
+.notif-banner-contenido {
+  background: linear-gradient(135deg, #0c1a28, #0d2137);
+  border: 1px solid #2471a3;
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(36,113,163,0.2);
+}
+
+.notif-banner-icono {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.notif-banner-texto {
+  flex: 1;
+}
+
+.notif-banner-titulo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  color: #ffffff;
+  letter-spacing: 2px;
+  margin-bottom: 2px;
+}
+
+.notif-banner-sub {
+  font-size: 11px;
+  color: #7fb3d3;
+  letter-spacing: 1px;
+}
+
+.notif-banner-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.notif-btn-si {
+  background: linear-gradient(135deg, #2471a3, #1a5a8a);
+  border: none;
+  color: #ffffff;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: 'Barlow', sans-serif;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.notif-btn-si::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -75%;
+  width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+  transform: skewX(-20deg);
+  animation: brillo-slide 2.5s ease infinite;
+}
+
+.notif-btn-no {
+  background: none;
+  border: none;
+  color: #5d8aa8;
+  font-size: 10px;
+  letter-spacing: 1px;
+  font-family: 'Barlow', sans-serif;
+  cursor: pointer;
+  text-align: center;
+  padding: 4px;
+}
+
+.notif-btn-no:hover { color: #7fb3d3; }
+
+/* ===== BOTÓN CANCELAR CITA (cliente) ===== */
+.boton-cancelar-cita {
+  display: block;
+  width: 100%;
+  background: none;
+  border: 1px solid rgba(192,57,43,0.4);
+  color: #e74c3c;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: 'Barlow', sans-serif;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.2s ease;
+}
+
+.boton-cancelar-cita:hover { background: rgba(192,57,43,0.12); }
+
+.cancelar-tarde-msg {
+  font-size: 10px;
+  color: #5d8aa8;
+  font-style: italic;
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* ===== BOTÓN CANCELAR ADMIN ===== */
+.boton-cancelar-admin {
+  display: block;
+  width: 100%;
+  background: none;
+  border: 1px solid rgba(192,57,43,0.3);
+  color: #e74c3c;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: 'Barlow', sans-serif;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+}
+
+.boton-cancelar-admin:hover { background: rgba(192,57,43,0.15); }
+
+/* ===================================================
    PANEL ADMIN — PANTALLA COMPLETA
 =================================================== */
 .panel-admin {

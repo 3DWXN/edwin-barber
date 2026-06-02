@@ -31,7 +31,41 @@
     gtag('js', new Date());
     gtag('config', 'G-BZP3NH41LR');
   </script>
+  <!-- Registro Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/edwin-barber/sw.js')
+          .then(reg => {
+            console.log('SW registrado:', reg.scope)
+            // Escuchar mensajes del SW para abrir panel admin
+            navigator.serviceWorker.addEventListener('message', e => {
+              if (e.data && e.data.tipo === 'abrir-admin') {
+                if (typeof abrirPanelAdmin === 'function') abrirPanelAdmin()
+              }
+            })
+          })
+          .catch(err => console.log('SW error:', err))
+      })
+    }
+  </script>
 </head>
+
+<!-- Banner de notificaciones -->
+<div class="notif-banner" id="notif-banner" style="display:none;">
+  <div class="notif-banner-contenido">
+    <span class="notif-banner-icono">✂️</span>
+    <div class="notif-banner-texto">
+      <p class="notif-banner-titulo">Activa las notificaciones</p>
+      <p class="notif-banner-sub">Entérate cuando llegue una nueva cita</p>
+    </div>
+    <div class="notif-banner-btns">
+      <button class="notif-btn-si" onclick="activarNotificaciones()">Activar</button>
+      <button class="notif-btn-no" onclick="cerrarBannerNotif()">Ahora no</button>
+    </div>
+  </div>
+</div>
+
 <body>
 
   <!-- ===== NAVBAR ===== -->

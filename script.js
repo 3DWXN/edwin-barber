@@ -1333,7 +1333,12 @@ window.confirmarCita = function () {
 
   // Guardar en Firebase en paralelo (no bloqueante)
   guardarCita(datos).then(resultado => {
-    if (!resultado.exito) console.error('Error guardando cita:', resultado.error)
+    if (!resultado.exito) {
+      console.error('Error guardando cita:', resultado.error)
+    } else {
+      // Notificación local si las tiene activadas
+      enviarNotificacionLocal(datos)
+    }
   })
 
   // Limpiar UI
@@ -1344,6 +1349,62 @@ window.confirmarCita = function () {
   document.getElementById('boton-agendar').style.display = 'none'
   boton.disabled = false
   actualizarTotal()
+}
+
+// ================================================================
+// NOTIFICACIONES PUSH
+// ================================================================
+const VAPID_PUBLIC_KEY = null // Sin servidor VAPID por ahora — usamos notificaciones locales
+
+window.activarNotificaciones = async function () {
+  cerrarBannerNotif()
+  if (!('Notification' in window)) {
+    alert('Tu navegador no soporta notificaciones.')
+    return
+  }
+  const permiso = await Notification.requestPermission()
+  if (permiso === 'granted') {
+    localStorage.setItem('eb_notif', '1')
+    // Mostrar notificación de prueba
+    new Notification('✂️ Edwin Barber', {
+      body: '¡Notificaciones activadas! Te avisaremos cuando llegue una cita.',
+      icon: 'images/logo.png',
+      badge: 'images/logo.png'
+    })
+  }
+}
+
+window.cerrarBannerNotif = function () {
+  const banner = document.getElementById('notif-banner')
+  if (banner) banner.style.display = 'none'
+  localStorage.setItem('eb_notif_cerrado', '1')
+}
+
+function mostrarBannerNotif () {
+  // Solo mostrar si no ha respondido antes y las notificaciones no están activadas
+  const cerrado = localStorage.getItem('eb_notif_cerrado')
+  const activadas = localStorage.getItem('eb_notif')
+  if (cerrado || activadas || Notification.permission === 'granted') return
+  setTimeout(() => {
+    const banner = document.getElementById('notif-banner')
+    if (banner) banner.style.display = 'block'
+  }, 3000) // Aparece 3 segundos después de cargar
+}
+
+function enviarNotificacionLocal (datos) {
+  if (Notification.permission !== 'granted') return
+  const notif = new Notification(`✂️ Nueva cita — ${datos.nombre}`, {
+    body: `${datos.servicio} · ${datos.fecha ? new Date(datos.fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : ''} · ${datos.hora || ''}`,
+    icon: 'images/logo.png',
+    badge: 'images/logo.png',
+    tag: 'nueva-cita',
+    renotify: true,
+    vibrate: [200, 100, 200]
+  })
+  notif.onclick = () => {
+    window.focus()
+    notif.close()
+  }
 }
 
 // ================================================================
@@ -1360,6 +1421,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Si admin tenía sesión activa (sessionStorage persiste mientras el tab esté abierto)
   if (sesionAdminActiva()) actualizarBadgeSesion()
+
+  // Banner notificaciones
+  if ('Notification' in window) mostrarBannerNotif()
 
   cargarResenas()
 
