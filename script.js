@@ -1337,6 +1337,11 @@ document.addEventListener('DOMContentLoaded', () => {
       hora: horaSeleccionada,
       total
     }
+
+    // SAFARI FIX: abrir ventana ANTES del await (evento síncrono)
+    // Safari bloquea window.open después de cualquier await
+    const ventana = window.open('', '_blank')
+
     const resultado = await guardarCita(datos)
     if (resultado.exito) {
       const fechaFmt = new Date(fechaSeleccionada + 'T12:00:00').toLocaleDateString('es', {
@@ -1352,19 +1357,23 @@ document.addEventListener('DOMContentLoaded', () => {
         `🕐 Hora: ${datos.hora}\n💰 Total: $${total.toLocaleString()}\n\n` +
         `¿Queda confirmada la cita?`
       const urlWA = `https://wa.me/573173475482?text=${encodeURIComponent(mensaje)}`
+
       cerrarCitas()
       this.reset()
       document.getElementById('seccion-horas').style.display = 'none'
       document.getElementById('seccion-calendario').style.display = 'none'
       document.getElementById('boton-agendar').style.display = 'none'
-      const enlace = document.createElement('a')
-      enlace.href = urlWA
-      enlace.target = '_blank'
-      enlace.rel = 'noopener'
-      document.body.appendChild(enlace)
-      enlace.click()
-      document.body.removeChild(enlace)
+
+      // Redirigir la ventana ya abierta a WhatsApp
+      if (ventana) {
+        ventana.location.href = urlWA
+      } else {
+        // Fallback si el popup fue bloqueado
+        window.location.href = urlWA
+      }
     } else {
+      // Cerrar ventana vacía si hubo error
+      if (ventana) ventana.close()
       alert('Hubo un error. Intenta de nuevo.')
     }
     boton.disabled = false
