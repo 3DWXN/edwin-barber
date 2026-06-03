@@ -327,11 +327,41 @@ document.addEventListener('DOMContentLoaded', () => {
 // ================================================================
 // PANEL ADMIN
 // ================================================================
+async function autoCompletarCitas () {
+  // Revisa citas pendientes/confirmadas y las marca como completadas
+  // si ya pasó más de 1 hora desde su hora programada
+  try {
+    const ahora = new Date()
+    const todasCitas = await obtenerTodasLasCitas()
+    const porCompletar = todasCitas.filter(c => {
+      if (c.estado !== 'pendiente' && c.estado !== 'confirmada') return false
+      if (!c.fecha || !c.hora) return false
+      const [horaStr, periodo] = c.hora.split(' ')
+      let [h, m] = horaStr.split(':').map(Number)
+      if (periodo === 'PM' && h !== 12) h += 12
+      if (periodo === 'AM' && h === 12) h = 0
+      const fechaCita = new Date(c.fecha + 'T00:00:00')
+      fechaCita.setHours(h, m, 0, 0)
+      // Si pasó más de 1 hora desde la cita
+      return (ahora - fechaCita) / 60000 > 60
+    })
+    // Actualizar todas en paralelo
+    await Promise.all(porCompletar.map(c => actualizarEstadoCita(c.id, 'completada')))
+    if (porCompletar.length > 0) {
+      console.log(`✅ ${porCompletar.length} cita(s) marcadas como completadas`)
+    }
+  } catch (e) {
+    console.error('Error auto-completando citas:', e)
+  }
+}
+
 function abrirPanelAdmin () {
   document.getElementById('panel-admin').style.display = 'block'
   document.body.style.overflow = 'hidden'
   fechaDash = new Date()
   fechaAgenda = new Date()
+  // Auto-completar citas viejas al abrir el panel
+  autoCompletarCitas()
   cambiarTab('dashboard')
 }
 
@@ -343,15 +373,17 @@ window.cerrarPanelAdmin = function () {
 }
 
 window.cambiarTab = function (tab) {
-  ;['dashboard', 'agenda', 'citas'].forEach(t => {
-    document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none'
+  ;['dashboard', 'agenda', 'citas', 'disponibilidad'].forEach(t => {
+    const el = document.getElementById(`tab-${t}`)
+    if (el) el.style.display = t === tab ? 'block' : 'none'
   })
   document.querySelectorAll('.admin-tab').forEach((btn, i) => {
-    btn.classList.toggle('activo', ['dashboard', 'agenda', 'citas'][i] === tab)
+    btn.classList.toggle('activo', ['dashboard', 'agenda', 'citas', 'disponibilidad'][i] === tab)
   })
   if (tab === 'dashboard') cargarDashboard()
   if (tab === 'agenda') cargarAgenda()
   if (tab === 'citas') cargarTodasCitas()
+  if (tab === 'disponibilidad') cargarPanelDisponibilidad()
 }
 
 // ================================================================
