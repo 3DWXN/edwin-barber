@@ -770,10 +770,13 @@ window.cambiarEstadoCita = async function (select) {
   if (resultado.exito) {
     const card = select.closest('.agenda-cita-card')
     if (card) card.className = `agenda-cita-card estado-${nuevoEstado}`
-    // Si confirma, abrir WhatsApp con mensaje listo
     if (nuevoEstado === 'confirmada') {
       const cita = extraerDatosCitaDeCard(card, id)
       abrirWhatsAppConfirmacion(cita)
+    }
+    if (nuevoEstado === 'cancelada') {
+      const cita = extraerDatosCitaDeCard(card, id)
+      abrirWhatsAppCancelacion(cita)
     }
   } else {
     alert('Error al actualizar el estado.')
@@ -904,6 +907,22 @@ function abrirWhatsAppConfirmacion (cita) {
     `🕐 Hora: ${cita.hora}\n\n` +
     `Si necesitas cancelar, avísame con al menos 1 hora de anticipación.\n` +
     `¡Te espero! 💈`
+  const telefono = cita.telefono.startsWith('57') ? cita.telefono : `57${cita.telefono}`
+  window.location.href = `whatsapp://send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`
+}
+
+function abrirWhatsAppCancelacion (cita) {
+  if (!cita.telefono) return
+  const fechaFmt = cita.fechaFmt || (() => {
+    const d = new Date(cita.fecha + 'T12:00:00')
+    return d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
+  })()
+  const mensaje =
+    `Hola ${cita.nombre} 👋, lamentamos informarte que tu cita ha sido cancelada:\n\n` +
+    `✂️ Servicio: ${cita.servicio}\n` +
+    `📅 Fecha: ${fechaFmt}\n` +
+    `🕐 Hora: ${cita.hora}\n\n` +
+    `Disculpa los inconvenientes. Escríbenos para reagendar cuando gustes. 💈`
   const telefono = cita.telefono.startsWith('57') ? cita.telefono : `57${cita.telefono}`
   window.location.href = `whatsapp://send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`
 }
