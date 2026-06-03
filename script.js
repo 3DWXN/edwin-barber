@@ -247,14 +247,19 @@ window.solicitarCancelacion = function (id, servicio, fechaFmt, hora) {
     `Quedo pendiente para reagendar cuando tengas disponibilidad.`
   const msgTarde = `Hola Edwin, necesito cancelar mi cita de ${servicio} del ${fechaFmt} a las ${hora}, pero ya no me permite hacerlo desde la app. ¿Podemos arreglarlo?`
 
-  // Cancelar en Firebase primero
+  // Guardar URL antes del await para Safari
+  let urlDestino = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(msg)}`
+
   cancelarCitaCliente(id).then(resultado => {
     mostrarPerfilCliente()
-    if (resultado.exito) {
-      window.location.href = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(msg)}`
-    } else if (resultado.tiempoAgotado) {
-      alert('⚠️ Ya no puedes cancelar — falta menos de 1 hora. Te redirigimos a WhatsApp.')
-      window.location.href = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(msgTarde)}`
+    if (resultado.tiempoAgotado) {
+      urlDestino = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(msgTarde)}`
+    }
+    if (resultado.exito || resultado.tiempoAgotado) {
+      // Pequeño timeout para que iOS procese el UI primero
+      setTimeout(() => {
+        window.location.href = urlDestino
+      }, 300)
     } else {
       alert('Hubo un error al cancelar. Intenta de nuevo.')
     }
@@ -268,19 +273,19 @@ window.cancelarDesdeAdmin = function (id, nombre, servicio, fechaFmt, hora, tele
   const confirmar = confirm(`¿Cancelar la cita de ${nombre}?\n\n✂️ ${servicio}\n📅 ${fechaFmt}\n🕐 ${hora}`)
   if (!confirmar) return
 
+  const msg =
+    `Hola ${nombre} 👋, lamentamos informarte que tu cita ha sido cancelada:\n\n` +
+    `✂️ Servicio: ${servicio}\n` +
+    `📅 Fecha: ${fechaFmt}\n` +
+    `🕐 Hora: ${hora}\n\n` +
+    `Disculpa los inconvenientes. Escríbenos para reagendar cuando gustes. 💈`
+  const tel = telefono.startsWith('57') ? telefono : `57${telefono}`
+  const url = `whatsapp://send?phone=${tel}&text=${encodeURIComponent(msg)}`
+
   actualizarEstadoCita(id, 'cancelada').then(resultado => {
     if (resultado.exito) {
-      const msg =
-        `Hola ${nombre} 👋, lamentamos informarte que tu cita ha sido cancelada:\n\n` +
-        `✂️ Servicio: ${servicio}\n` +
-        `📅 Fecha: ${fechaFmt}\n` +
-        `🕐 Hora: ${hora}\n\n` +
-        `Disculpa los inconvenientes. Escríbenos para reagendar cuando gustes. 💈`
-      const tel = telefono.startsWith('57') ? telefono : `57${telefono}`
-      // Actualizar UI
       cargarAgenda()
-      // Abrir WhatsApp
-      window.location.href = `whatsapp://send?phone=${tel}&text=${encodeURIComponent(msg)}`
+      setTimeout(() => { window.location.href = url }, 300)
     } else {
       alert('Error al cancelar la cita.')
     }
