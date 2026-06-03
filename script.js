@@ -679,11 +679,20 @@ async function cargarAgenda () {
             </select>
           </div>
           <p style="font-size:11px;color:#5d8aa8;margin-top:4px;">📱 ${cita.telefono || '—'}</p>
-          ${cita.estado !== 'cancelada' && cita.estado !== 'completada' ? `
-            <button class="boton-cancelar-admin" onclick="cancelarDesdeAdmin('${cita.id}','${cita.nombre}','${cita.servicio}','${fechaFmtAdmin}','${turno}','${cita.telefono || ''}')">
+          ${cita.estado !== 'cancelada' && cita.estado !== 'completada' ? (() => {
+            const fechaFmtAdmin = fechaAgenda.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
+            const msg =
+              `Hola ${cita.nombre} 👋, lamentamos informarte que tu cita ha sido cancelada:\n\n` +
+              `✂️ Servicio: ${cita.servicio}\n` +
+              `📅 Fecha: ${fechaFmtAdmin}\n` +
+              `🕐 Hora: ${turno}\n\n` +
+              `Disculpa los inconvenientes. Escríbenos para reagendar cuando gustes. 💈`
+            const tel = (cita.telefono || '').startsWith('57') ? cita.telefono : `57${cita.telefono || ''}`
+            const url = `whatsapp://send?phone=${tel}&text=${encodeURIComponent(msg)}`
+            return `<a class="boton-cancelar-admin" href="${url}" onclick="actualizarEstadoCita('${cita.id}','cancelada').then(()=>setTimeout(()=>cargarAgenda(),1000))">
               ✕ Cancelar y notificar cliente
-            </button>
-          ` : ''}
+            </a>`
+          })() : ''}
         </div>
       `
     } else {
