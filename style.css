@@ -87,6 +87,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
+  padding-top: calc(12px + env(safe-area-inset-top));
   background-color: rgba(10, 21, 32, 0.97);
   border-bottom: 1px solid #2471a3;
   z-index: 300;
@@ -241,7 +242,7 @@ body {
   justify-content: center;
   min-height: 100vh;
   text-align: center;
-  padding: 100px 20px 80px;
+  padding: calc(100px + env(safe-area-inset-top)) 20px 80px;
   background: linear-gradient(160deg, #071520 0%, #0d2137 40%, #0c1a28 100%);
   overflow: hidden;
 }
@@ -840,6 +841,7 @@ body {
   opacity: 1;
   pointer-events: auto;
   animation: pulso 2.5s ease infinite;
+  bottom: calc(20px + env(safe-area-inset-bottom));
 }
 
 /* ===== MODAL ===== */
@@ -1456,7 +1458,7 @@ body {
 =================================================== */
 .notif-banner {
   position: fixed;
-  bottom: 80px;
+  bottom: calc(80px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   z-index: 150;
@@ -1611,6 +1613,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
+  padding-top: calc(14px + env(safe-area-inset-top));
   background-color: rgba(10, 21, 32, 0.98);
   border-bottom: 1px solid #1e3a52;
   position: sticky;

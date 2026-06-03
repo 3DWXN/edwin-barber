@@ -236,24 +236,25 @@ window.solicitarCancelacion = function (id, servicio, fechaFmt, hora) {
   const confirmar = confirm(`¿Seguro que quieres cancelar tu cita?\n\n✂️ ${servicio}\n📅 ${fechaFmt}\n🕐 ${hora}\n\nRecuerda: cancelaciones con menos de 1 hora generan cobro del 50%.`)
   if (!confirmar) return
 
+  const nombre = sesionCliente.nombre
+  const telefono = sesionCliente.telefono
+  const msg =
+    `Hola Edwin ✂️, soy ${nombre} (${telefono}).\n\n` +
+    `Te aviso que he *cancelado* mi cita:\n\n` +
+    `✂️ Servicio: ${servicio}\n` +
+    `📅 Fecha: ${fechaFmt}\n` +
+    `🕐 Hora: ${hora}\n\n` +
+    `Quedo pendiente para reagendar cuando tengas disponibilidad.`
+  const msgTarde = `Hola Edwin, necesito cancelar mi cita de ${servicio} del ${fechaFmt} a las ${hora}, pero ya no me permite hacerlo desde la app. ¿Podemos arreglarlo?`
+
+  // Cancelar en Firebase primero
   cancelarCitaCliente(id).then(resultado => {
+    mostrarPerfilCliente()
     if (resultado.exito) {
-      const nombre = sesionCliente.nombre
-      const telefono = sesionCliente.telefono
-      const msg =
-        `Hola Edwin ✂️, soy ${nombre} (${telefono}).\n\n` +
-        `Te aviso que he *cancelado* mi cita:\n\n` +
-        `✂️ Servicio: ${servicio}\n` +
-        `📅 Fecha: ${fechaFmt}\n` +
-        `🕐 Hora: ${hora}\n\n` +
-        `Quedo pendiente para reagendar cuando tengas disponibilidad.`
-      // Actualizar UI
-      mostrarPerfilCliente()
-      // Abrir WhatsApp
       window.location.href = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(msg)}`
     } else if (resultado.tiempoAgotado) {
-      alert('⚠️ Ya no puedes cancelar esta cita — falta menos de 1 hora.\n\nEscríbenos directamente por WhatsApp.')
-      window.location.href = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(`Hola Edwin, necesito cancelar mi cita de ${servicio} del ${fechaFmt} a las ${hora}, pero ya no me permite hacerlo desde la app. ¿Podemos arreglarlo?`)}`
+      alert('⚠️ Ya no puedes cancelar — falta menos de 1 hora. Te redirigimos a WhatsApp.')
+      window.location.href = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(msgTarde)}`
     } else {
       alert('Hubo un error al cancelar. Intenta de nuevo.')
     }
@@ -1412,19 +1413,30 @@ const VAPID_PUBLIC_KEY = null // Sin servidor VAPID por ahora — usamos notific
 
 window.activarNotificaciones = async function () {
   cerrarBannerNotif()
+
+  const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  const esPWA = window.navigator.standalone === true
+
+  if (esIOS && !esPWA) {
+    alert('📲 Para recibir notificaciones en iPhone:\n\n1. Toca el botón compartir ⬆️ en Safari\n2. Selecciona "Añadir a pantalla de inicio"\n3. Abre la app desde tu pantalla de inicio\n4. Activa las notificaciones desde ahí')
+    return
+  }
+
   if (!('Notification' in window)) {
     alert('Tu navegador no soporta notificaciones.')
     return
   }
+
   const permiso = await Notification.requestPermission()
   if (permiso === 'granted') {
     localStorage.setItem('eb_notif', '1')
-    // Mostrar notificación de prueba
     new Notification('✂️ Edwin Barber', {
       body: '¡Notificaciones activadas! Te avisaremos cuando llegue una cita.',
-      icon: 'images/logo.png',
-      badge: 'images/logo.png'
+      icon: 'images/logo512.png',
+      badge: 'images/logo512.png'
     })
+  } else {
+    alert('Notificaciones bloqueadas. Actívalas desde la configuración del navegador.')
   }
 }
 
