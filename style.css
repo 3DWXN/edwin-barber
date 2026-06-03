@@ -1352,6 +1352,105 @@ body {
   font-style: italic;
 }
 
+.sin-citas-msg {
+  text-align: center;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sin-citas-icono {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.sin-citas-titulo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  color: #ffffff;
+  letter-spacing: 3px;
+}
+
+.sin-citas-sub {
+  font-size: 13px;
+  color: #5d8aa8;
+  font-style: italic;
+  line-height: 1.6;
+  max-width: 280px;
+}
+
+/* ===================================================
+   MODAL CONFIRMACIÓN VISUAL
+=================================================== */
+.confirmacion-contenido {
+  text-align: center;
+}
+
+.confirmacion-check {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: #ffffff;
+  margin: 0 auto 16px;
+  box-shadow: 0 8px 24px rgba(39,174,96,0.4);
+  animation: girar-entrar 0.5s ease forwards;
+}
+
+.confirmacion-info {
+  background: #0a1520;
+  border: 1px solid #1e3a52;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 16px 0;
+  text-align: left;
+  font-size: 13px;
+  color: #7fb3d3;
+  line-height: 2;
+}
+
+.confirmacion-info span { color: #ffffff; font-weight: 600; }
+
+.confirmacion-nota {
+  font-size: 11px;
+  color: #5d8aa8;
+  font-style: italic;
+  margin-bottom: 16px;
+}
+
+/* ===================================================
+   FOOTER — BOTÓN COMPARTIR
+=================================================== */
+.footer-compartir {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid #1e3a52;
+  color: #5d8aa8;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: 'Barlow', sans-serif;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: all 0.2s ease;
+}
+
+.footer-compartir:hover {
+  border-color: #2471a3;
+  color: #7fb3d3;
+}
+
 /* ===================================================
    BANNER NOTIFICACIONES
 =================================================== */

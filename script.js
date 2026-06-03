@@ -1008,7 +1008,16 @@ async function renderCalendario () {
   }
 
   if (diasMostrados === 0) {
-    contenedor.innerHTML = '<p class="cargando">No hay días disponibles por el momento.</p>'
+    contenedor.innerHTML = `
+      <div class="sin-citas-msg">
+        <span class="sin-citas-icono">✂️</span>
+        <p class="sin-citas-titulo">Sin disponibilidad</p>
+        <p class="sin-citas-sub">Por el momento no hay turnos disponibles. Escríbenos por WhatsApp para más información.</p>
+        <button class="boton-principal" style="max-width:220px;margin-top:12px;" onclick="agendarDomicilio()">
+          💬 Contactar
+        </button>
+      </div>
+    `
   }
 }
 
@@ -1326,22 +1335,8 @@ window.confirmarCita = function () {
     `📍 Ubicación: ${datos.ubicacion}\n📅 Fecha: ${fechaFmt}\n` +
     `🕐 Hora: ${datos.hora}\n💰 Total: $${total.toLocaleString()}\n\n` +
     `¿Queda confirmada la cita?`
-  const urlWA = `https://wa.me/573173475482?text=${encodeURIComponent(mensaje)}`
 
-  // Abrir WhatsApp INMEDIATAMENTE (síncrono, Safari lo permite)
-  window.location.href = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(mensaje)}`
-
-  // Guardar en Firebase en paralelo (no bloqueante)
-  guardarCita(datos).then(resultado => {
-    if (!resultado.exito) {
-      console.error('Error guardando cita:', resultado.error)
-    } else {
-      // Notificación local si las tiene activadas
-      enviarNotificacionLocal(datos)
-    }
-  })
-
-  // Limpiar UI
+  // Limpiar UI y mostrar confirmación visual
   cerrarCitas()
   document.getElementById('form-citas').reset()
   document.getElementById('seccion-horas').style.display = 'none'
@@ -1349,6 +1344,65 @@ window.confirmarCita = function () {
   document.getElementById('boton-agendar').style.display = 'none'
   boton.disabled = false
   actualizarTotal()
+  mostrarConfirmacion(datos, total)
+
+  // Guardar en Firebase en paralelo
+  guardarCita(datos).then(resultado => {
+    if (!resultado.exito) {
+      console.error('Error guardando cita:', resultado.error)
+    } else {
+      enviarNotificacionLocal(datos)
+    }
+  })
+
+  // Abrir WhatsApp después de 1.5s para que el usuario vea la confirmación
+  setTimeout(() => {
+    window.location.href = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(mensaje)}`
+  }, 1500)
+}
+
+// ================================================================
+// COMPARTIR PÁGINA
+// ================================================================
+window.compartirPagina = function () {
+  const datos = {
+    title: 'Edwin Barber — Barbero Profesional',
+    text: '✂️ Agenda tu cita con Edwin Barber, barbero profesional en Jamundí. Cortes, barba, cejas y más.',
+    url: 'https://3dwxn.github.io/edwin-barber/'
+  }
+  if (navigator.share) {
+    navigator.share(datos).catch(() => {})
+  } else {
+    // Fallback — copiar al portapapeles
+    navigator.clipboard.writeText(datos.url).then(() => {
+      alert('✅ Link copiado al portapapeles')
+    }).catch(() => {
+      alert('Comparte este link: ' + datos.url)
+    })
+  }
+}
+
+// ================================================================
+// CONFIRMACIÓN VISUAL AL AGENDAR
+// ================================================================
+function mostrarConfirmacion (datos, total) {
+  const fechaFmt = new Date(datos.fecha + 'T12:00:00').toLocaleDateString('es', {
+    weekday: 'long', day: 'numeric', month: 'long'
+  })
+  document.getElementById('confirmacion-detalle').textContent =
+    `Tu cita quedó guardada exitosamente.`
+  document.getElementById('confirmacion-info').innerHTML = `
+    👤 <span>${datos.nombre}</span><br>
+    ✂️ <span>${datos.servicio}</span><br>
+    📅 <span>${fechaFmt}</span><br>
+    🕐 <span>${datos.hora}</span><br>
+    💰 <span>$${total.toLocaleString()}</span>
+  `
+  document.getElementById('modal-confirmacion').classList.add('abierto')
+}
+
+window.cerrarConfirmacion = function () {
+  document.getElementById('modal-confirmacion').classList.remove('abierto')
 }
 
 // ================================================================

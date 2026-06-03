@@ -2,27 +2,80 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Edwin Barber — Barbero Profesional en Jamundí, Valle del Cauca</title>
   <meta name="description" content="Barbero profesional en Jamundí, Valle del Cauca. Cortes, barba, cejas, masajes y Experiencia Gold. Agenda tu cita online fácil y rápido.">
   <meta name="keywords" content="barbero Jamundí, barbería Jamundí, corte de cabello Jamundí, barbero Valle del Cauca, Edwin Barber, citas barbería">
   <meta name="author" content="Edwin Barber">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://3dwxn.github.io/edwin-barber/">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="images/logo512.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="images/logo512.png">
+  <link rel="shortcut icon" href="images/logo512.png">
+
+  <!-- PWA — iPhone / iOS -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Edwin Barber">
+  <link rel="apple-touch-icon" href="images/logo512.png">
+  <meta name="theme-color" content="#0c1a28">
+
   <!-- Open Graph (WhatsApp, Facebook, Instagram) -->
   <meta property="og:title" content="Edwin Barber — Barbero Profesional en Jamundí">
   <meta property="og:description" content="Cortes, barba, cejas y más. Agenda tu cita online en segundos.">
-  <meta property="og:image" content="images/barberia.webp">
+  <meta property="og:image" content="https://3dwxn.github.io/edwin-barber/images/barberia.webp">
   <meta property="og:url" content="https://3dwxn.github.io/edwin-barber/">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_CO">
+
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Edwin Barber — Barbero Profesional en Jamundí">
   <meta name="twitter:description" content="Cortes, barba, cejas y más. Agenda tu cita online.">
-  <meta name="twitter:image" content="images/barberia.webp">
+  <meta name="twitter:image" content="https://3dwxn.github.io/edwin-barber/images/barberia.webp">
+
+  <!-- Schema.org — Negocio local para Google -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HairSalon",
+    "name": "Edwin Barber",
+    "description": "Barbero profesional en Jamundí, Valle del Cauca. Cortes, barba, cejas y más.",
+    "url": "https://3dwxn.github.io/edwin-barber/",
+    "image": "https://3dwxn.github.io/edwin-barber/images/barberia.webp",
+    "telephone": "+573173475482",
+    "priceRange": "$$",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Jamundí",
+      "addressRegion": "Valle del Cauca",
+      "addressCountry": "CO"
+    },
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "Saturday",
+        "opens": "14:00",
+        "closes": "21:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "Sunday",
+        "opens": "09:00",
+        "closes": "15:00"
+      }
+    ],
+    "sameAs": ["https://wa.me/573173475482"]
+  }
+  </script>
+
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;600&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-BZP3NH41LR"></script>
   <script>
@@ -31,14 +84,13 @@
     gtag('js', new Date());
     gtag('config', 'G-BZP3NH41LR');
   </script>
+
   <!-- Registro Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/edwin-barber/sw.js')
           .then(reg => {
-            console.log('SW registrado:', reg.scope)
-            // Escuchar mensajes del SW para abrir panel admin
             navigator.serviceWorker.addEventListener('message', e => {
               if (e.data && e.data.tipo === 'abrir-admin') {
                 if (typeof abrirPanelAdmin === 'function') abrirPanelAdmin()
@@ -312,6 +364,9 @@
   <footer class="footer">
     <p>© 2025 Edwin Barber · Todos los derechos reservados</p>
     <p class="footer-sub">Calidad · Estilo · Precisión</p>
+    <button class="footer-compartir" onclick="compartirPagina()">
+      📲 Compartir esta página
+    </button>
   </footer>
 
   <!-- BOTÓN FLOTANTE -->
@@ -667,6 +722,20 @@
         <input class="campo-input" type="date" id="excel-fecha-fin">
       </div>
       <button class="boton-principal" id="btn-generar-excel" onclick="generarExcel()">⬇️ Descargar Excel</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL CONFIRMACIÓN CITA -->
+  <!-- ============================================================ -->
+  <div class="modal-overlay" id="modal-confirmacion" onclick="cerrarConfirmacion()">
+    <div class="modal-contenido confirmacion-contenido" onclick="event.stopPropagation()">
+      <div class="confirmacion-check">✓</div>
+      <h2 class="modal-titulo">¡Cita agendada!</h2>
+      <p class="modal-descripcion" id="confirmacion-detalle"></p>
+      <div class="confirmacion-info" id="confirmacion-info"></div>
+      <p class="confirmacion-nota">Te redirigiremos a WhatsApp para confirmar con Edwin.</p>
+      <button class="boton-principal" onclick="cerrarConfirmacion()">Entendido</button>
     </div>
   </div>
 
