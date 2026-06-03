@@ -761,26 +761,54 @@ async function actualizarBotonBloqueo () {
   }
 }
 
-window.cambiarEstadoCita = async function (select) {
+window.cambiarEstadoCita = function (select) {
   const id = select.dataset.id
   const nuevoEstado = select.value
+  const card = select.closest('.agenda-cita-card')
+
+  // Construir URL de WhatsApp ANTES de cualquier await (síncrono)
+  let urlWA = null
+  if ((nuevoEstado === 'confirmada' || nuevoEstado === 'cancelada') && card) {
+    const cita = extraerDatosCitaDeCard(card, id)
+    if (cita.telefono) {
+      const telefono = cita.telefono.startsWith('57') ? cita.telefono : `57${cita.telefono}`
+      const fechaFmt = cita.fechaFmt || fechaAgenda.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
+
+      const mensajeConfirmar =
+        `Hola ${cita.nombre} 👋, te confirmo tu cita:\n\n` +
+        `✂️ Servicio: ${cita.servicio}\n` +
+        `📅 Fecha: ${fechaFmt}\n` +
+        `🕐 Hora: ${cita.hora}\n\n` +
+        `Si necesitas cancelar, avísame con al menos 1 hora de anticipación.\n¡Te espero! 💈`
+
+      const mensajeCancelar =
+        `Hola ${cita.nombre} 👋, lamentamos informarte que tu cita ha sido cancelada:\n\n` +
+        `✂️ Servicio: ${cita.servicio}\n` +
+        `📅 Fecha: ${fechaFmt}\n` +
+        `🕐 Hora: ${cita.hora}\n\n` +
+        `Disculpa los inconvenientes. Escríbenos para reagendar cuando gustes. 💈`
+
+      const msg = nuevoEstado === 'confirmada' ? mensajeConfirmar : mensajeCancelar
+      urlWA = `whatsapp://send?phone=${telefono}&text=${encodeURIComponent(msg)}`
+    }
+  }
+
+  // Actualizar color del card inmediatamente
+  if (card) card.className = `agenda-cita-card estado-${nuevoEstado}`
   select.disabled = true
-  const resultado = await actualizarEstadoCita(id, nuevoEstado)
-  select.disabled = false
-  if (resultado.exito) {
-    const card = select.closest('.agenda-cita-card')
-    if (card) card.className = `agenda-cita-card estado-${nuevoEstado}`
-    if (nuevoEstado === 'confirmada') {
-      const cita = extraerDatosCitaDeCard(card, id)
-      abrirWhatsAppConfirmacion(cita)
+
+  // Actualizar Firebase en segundo plano
+  actualizarEstadoCita(id, nuevoEstado).then(resultado => {
+    select.disabled = false
+    if (!resultado.exito) {
+      alert('Error al actualizar el estado.')
+      cargarAgenda()
     }
-    if (nuevoEstado === 'cancelada') {
-      const cita = extraerDatosCitaDeCard(card, id)
-      abrirWhatsAppCancelacion(cita)
-    }
-  } else {
-    alert('Error al actualizar el estado.')
-    cargarAgenda()
+  })
+
+  // Abrir WhatsApp sincrónicamente (antes del await)
+  if (urlWA) {
+    window.location.href = urlWA
   }
 }
 
