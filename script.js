@@ -1523,7 +1523,7 @@ window.activarNotificaciones = async function () {
   const permiso = await Notification.requestPermission()
   if (permiso === 'granted') {
     localStorage.setItem('eb_notif', '1')
-    new Notification('✂️ Edwin Barber', {
+    new Notification('💈 Edwin Barber', {
       body: '¡Notificaciones activadas! Te avisaremos cuando llegue una cita.',
       icon: 'images/logo512.png',
       badge: 'images/logo512.png'
