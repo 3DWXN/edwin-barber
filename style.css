@@ -2087,6 +2087,44 @@ a.boton-cancelar-admin:hover,
   letter-spacing: 1px;
 }
 
+.agenda-estado-btns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.agenda-estado-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid #1e3a52;
+  color: #7fb3d3;
+  font-size: 10px;
+  letter-spacing: 1px;
+  font-family: 'Barlow', sans-serif;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-confirmada:hover, .btn-confirmada.activo {
+  background: rgba(243,156,18,0.2);
+  border-color: #f39c12;
+  color: #f39c12;
+}
+
+.btn-cancelada:hover, .btn-cancelada.activo {
+  background: rgba(192,57,43,0.2);
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.btn-completada:hover, .btn-completada.activo {
+  background: rgba(39,174,96,0.2);
+  border-color: #27ae60;
+  color: #27ae60;
+}
+
 /* Select de estado dentro de la agenda */
 .agenda-estado-select {
   background-color: #071015;
