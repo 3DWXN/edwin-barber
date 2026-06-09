@@ -2467,6 +2467,141 @@ a.boton-cancelar-admin:hover,
 }
 
 /* ===================================================
+   HISTORIAL MENSUAL
+=================================================== */
+.historial-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.historial-stat {
+  background: #0c1a28;
+  border: 1px solid #1e3a52;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.historial-stat-label {
+  font-size: 9px;
+  color: #5d8aa8;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.historial-stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  color: #ffffff;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.historial-grafica {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 140px;
+  padding-top: 8px;
+  overflow-x: auto;
+}
+
+.historial-tabla {
+  background: #0c1a28;
+  border: 1px solid #1e3a52;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.historial-tabla-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 12px 16px;
+  background: #071015;
+  border-bottom: 1px solid #1e3a52;
+  font-size: 10px;
+  color: #5d8aa8;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.historial-tabla-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 12px 16px;
+  border-bottom: 1px solid #0d1e2e;
+  font-size: 13px;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.historial-tabla-row:last-child { border-bottom: none; }
+.historial-tabla-row:hover { background: rgba(36,113,163,0.05); }
+
+.historial-mes-nombre {
+  color: #d6eaf8;
+  text-transform: capitalize;
+}
+
+.historial-citas {
+  color: #7fb3d3;
+  text-align: center;
+}
+
+.historial-total {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  color: #27ae60;
+  letter-spacing: 1px;
+}
+
+.historial-promedio {
+  font-size: 12px;
+  color: #5d8aa8;
+}
+
+/* ===== BOTÓN CALENDARIO ===== */
+.boton-calendario {
+  display: block;
+  width: 100%;
+  background: rgba(36,113,163,0.12);
+  border: 1px solid rgba(36,113,163,0.4);
+  color: #7fb3d3;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: 'Barlow', sans-serif;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.boton-calendario::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -75%;
+  width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+  transform: skewX(-20deg);
+  animation: brillo-slide 3s ease infinite;
+}
+
+.boton-calendario:hover {
+  background: rgba(36,113,163,0.2);
+  border-color: #2471a3;
+  color: #ffffff;
+}
+
+/* ===================================================
    SECCIÓN SOBRE MÍ
 =================================================== */
 .sobre-mi {

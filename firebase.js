@@ -315,6 +315,49 @@ export async function cancelarCitaCliente(id) {
 }
 
 // ================================================================
+// HISTORIAL MENSUAL DE INGRESOS
+// ================================================================
+export async function obtenerHistorialMensual() {
+  try {
+    const snapshot = await getDocs(collection(db, "citas"))
+    const mapa = {}
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data()
+      if (!data.fecha || !data.total) return
+      const mes = data.fecha.substring(0, 7) // "2026-05"
+      if (!mapa[mes]) mapa[mes] = { total: 0, citas: 0 }
+      mapa[mes].total += data.total
+      mapa[mes].citas++
+    })
+    return Object.entries(mapa).sort().map(([mes, datos]) => {
+      const [anio, m] = mes.split('-')
+      const nombreMes = new Date(parseInt(anio), parseInt(m) - 1, 1)
+        .toLocaleDateString('es', { month: 'long', year: 'numeric' })
+      return { mes, nombreMes, ...datos }
+    })
+  } catch (error) {
+    return []
+  }
+}
+
+// ================================================================
+// VERIFICAR SI CLIENTE PUEDE DEJAR RESEÑA
+// ================================================================
+export async function clientePuedeDejearResena(telefono) {
+  try {
+    const q = query(
+      collection(db, "citas"),
+      where("telefono", "==", telefono),
+      where("estado", "==", "completada")
+    )
+    const snapshot = await getDocs(q)
+    return snapshot.size > 0
+  } catch (error) {
+    return false
+  }
+}
+
+// ================================================================
 // GUARDAR RESEÑA
 // ================================================================
 export async function guardarResena(datos) {

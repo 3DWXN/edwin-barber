@@ -6,6 +6,7 @@ import {
   iniciarSesionAdmin, sesionAdminActiva, cerrarSesionAdmin,
   bloquearFecha, desbloquearFecha, estaFechaBloqueada, obtenerFechasBloqueadas,
   obtenerConfigHorariosDB, guardarConfigHorariosDB, cancelarCitaCliente,
+  obtenerHistorialMensual, clientePuedeDejearResena,
   CONFIG_SLOTS
 } from './firebase.js'
 
@@ -373,16 +374,17 @@ window.cerrarPanelAdmin = function () {
 }
 
 window.cambiarTab = function (tab) {
-  ;['dashboard', 'agenda', 'citas', 'disponibilidad'].forEach(t => {
+  ;['dashboard', 'agenda', 'citas', 'historial', 'disponibilidad'].forEach(t => {
     const el = document.getElementById(`tab-${t}`)
     if (el) el.style.display = t === tab ? 'block' : 'none'
   })
   document.querySelectorAll('.admin-tab').forEach((btn, i) => {
-    btn.classList.toggle('activo', ['dashboard', 'agenda', 'citas', 'disponibilidad'][i] === tab)
+    btn.classList.toggle('activo', ['dashboard', 'agenda', 'citas', 'historial', 'disponibilidad'][i] === tab)
   })
   if (tab === 'dashboard') cargarDashboard()
   if (tab === 'agenda') cargarAgenda()
   if (tab === 'citas') cargarTodasCitas()
+  if (tab === 'historial') cargarHistorialMensual()
   if (tab === 'disponibilidad') cargarPanelDisponibilidad()
 }
 
@@ -1240,20 +1242,6 @@ async function guardarConfigHorarios (config) {
 // ================================================================
 // PANEL DISPONIBILIDAD ADMIN
 // ================================================================
-window.cambiarTab = function (tab) {
-  ;['dashboard', 'agenda', 'citas', 'disponibilidad'].forEach(t => {
-    const el = document.getElementById(`tab-${t}`)
-    if (el) el.style.display = t === tab ? 'block' : 'none'
-  })
-  document.querySelectorAll('.admin-tab').forEach((btn, i) => {
-    btn.classList.toggle('activo', ['dashboard', 'agenda', 'citas', 'disponibilidad'][i] === tab)
-  })
-  if (tab === 'dashboard') cargarDashboard()
-  if (tab === 'agenda') cargarAgenda()
-  if (tab === 'citas') cargarTodasCitas()
-  if (tab === 'disponibilidad') cargarPanelDisponibilidad()
-}
-
 async function cargarPanelDisponibilidad () {
   const contenedor = document.getElementById('tab-disponibilidad')
   contenedor.innerHTML = '<p class="cargando">Cargando configuración...</p>'
@@ -1421,13 +1409,14 @@ window.confirmarCita = function () {
   boton.disabled = false
   actualizarTotal()
   mostrarConfirmacion(datos, total)
+  datosCitaActual = datos
 
   // Guardar en Firebase en paralelo
   guardarCita(datos).then(resultado => {
     if (!resultado.exito) {
       console.error('Error guardando cita:', resultado.error)
     } else {
-      enviarNotificacionLocal(datos)
+      notificarTelegram(datos)
     }
   })
 
@@ -1549,6 +1538,147 @@ function enviarNotificacionLocal (datos) {
 }
 
 // ================================================================
+// TELEGRAM — notificación cuando llega cita nueva
+// ================================================================
+const TG_TOKEN = '8725878627:AAHK_IbbSPJt8pRRUUrACC6oZBt6rNmJbkg'
+const TG_CHAT  = '5886411813'
+
+async function notificarTelegram (datos) {
+  try {
+    const fechaFmt = datos.fecha
+      ? new Date(datos.fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
+      : '—'
+    const texto =
+      `✂️ *Nueva cita — Edwin Barber*\n\n` +
+      `👤 *Cliente:* ${datos.nombre}\n` +
+      `📱 *WhatsApp:* ${datos.telefono}\n` +
+      `✂️ *Servicio:* ${datos.servicio}\n` +
+      `${datos.adiciones && datos.adiciones.length ? `➕ *Adiciones:* ${datos.adiciones.join(', ')}\n` : ''}` +
+      `📍 *Ubicación:* ${datos.ubicacion}\n` +
+      `📅 *Fecha:* ${fechaFmt}\n` +
+      `🕐 *Hora:* ${datos.hora}\n` +
+      `💰 *Total:* $${(datos.total || 0).toLocaleString()}`
+
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TG_CHAT,
+        text: texto,
+        parse_mode: 'Markdown'
+      })
+    })
+  } catch (e) {
+    console.error('Error Telegram:', e)
+  }
+}
+
+// ================================================================
+// AÑADIR AL CALENDARIO
+// ================================================================
+let datosCitaActual = null // guarda los datos de la última cita agendada
+
+window.agregarAlCalendario = function () {
+  if (!datosCitaActual) return
+  const { fecha, hora, servicio, nombre } = datosCitaActual
+
+  // Parsear hora
+  const [horaStr, periodo] = hora.split(' ')
+  let [h, m] = horaStr.split(':').map(Number)
+  if (periodo === 'PM' && h !== 12) h += 12
+  if (periodo === 'AM' && h === 12) h = 0
+
+  const inicio = new Date(fecha + 'T00:00:00')
+  inicio.setHours(h, m, 0, 0)
+  const fin = new Date(inicio.getTime() + 40 * 60000) // 40 min después
+
+  const fmt = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+
+  // Intentar Google Calendar primero (funciona en todos)
+  const urlGoogle =
+    `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+    `&text=${encodeURIComponent(`✂️ Cita Edwin Barber — ${servicio}`)}` +
+    `&dates=${fmt(inicio)}/${fmt(fin)}` +
+    `&details=${encodeURIComponent(`Cita de ${nombre} para ${servicio} en Edwin Barber`)}` +
+    `&location=${encodeURIComponent('Edwin Barber, Jamundí, Valle del Cauca')}`
+
+  window.open(urlGoogle, '_blank')
+}
+
+// ================================================================
+// HISTORIAL MENSUAL — Panel Admin
+// ================================================================
+async function cargarHistorialMensual () {
+  const contenedor = document.getElementById('tab-historial')
+  contenedor.innerHTML = '<p class="cargando">Cargando historial...</p>'
+
+  const historial = await obtenerHistorialMensual()
+
+  if (historial.length === 0) {
+    contenedor.innerHTML = '<p class="admin-vacio">No hay datos de ingresos aún.</p>'
+    return
+  }
+
+  const totalGeneral = historial.reduce((s, m) => s + m.total, 0)
+  const maxTotal = Math.max(...historial.map(m => m.total), 1)
+
+  let html = `
+    <div class="historial-resumen">
+      <div class="historial-stat">
+        <p class="historial-stat-label">Total acumulado</p>
+        <p class="historial-stat-num">$${totalGeneral.toLocaleString()}</p>
+      </div>
+      <div class="historial-stat">
+        <p class="historial-stat-label">Meses registrados</p>
+        <p class="historial-stat-num">${historial.length}</p>
+      </div>
+      <div class="historial-stat">
+        <p class="historial-stat-label">Mejor mes</p>
+        <p class="historial-stat-num">$${Math.max(...historial.map(m => m.total)).toLocaleString()}</p>
+      </div>
+    </div>
+
+    <div class="admin-grafica-card">
+      <p class="admin-grafica-titulo">Ingresos por Mes</p>
+      <p class="admin-grafica-sub">Histórico completo</p>
+      <div class="historial-grafica">
+        ${historial.map(m => {
+          const altura = Math.max((m.total / maxTotal) * 120, 4)
+          const [anio, mes] = m.mes.split('-')
+          const etiqueta = new Date(parseInt(anio), parseInt(mes) - 1, 1)
+            .toLocaleDateString('es', { month: 'short' })
+          return `
+            <div class="grafica-barra-wrap">
+              <span class="grafica-valor">$${Math.round(m.total / 1000)}k</span>
+              <div class="grafica-barra" style="height:${altura}px" title="$${m.total.toLocaleString()}"></div>
+              <span class="grafica-etiqueta">${etiqueta}</span>
+            </div>
+          `
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="historial-tabla">
+      <div class="historial-tabla-header">
+        <span>Mes</span>
+        <span>Citas</span>
+        <span>Ingresos</span>
+        <span>Promedio</span>
+      </div>
+      ${historial.slice().reverse().map(m => `
+        <div class="historial-tabla-row">
+          <span class="historial-mes-nombre">${m.nombreMes}</span>
+          <span class="historial-citas">${m.citas}</span>
+          <span class="historial-total">$${m.total.toLocaleString()}</span>
+          <span class="historial-promedio">$${Math.round(m.total / m.citas).toLocaleString()}</span>
+        </div>
+      `).join('')}
+    </div>
+  `
+  contenedor.innerHTML = html
+}
+
+// ================================================================
 // LÓGICA PRINCIPAL — DOMContentLoaded
 // ================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1587,11 +1717,25 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
     document.getElementById('error-estrellas').style.display = 'none'
+
+    // Verificar que el cliente tenga una cita completada
+    const nombreResena = document.getElementById('resena-nombre').value.trim()
+    const telefonoResena = sesionCliente ? sesionCliente.telefono : null
+
+    if (telefonoResena) {
+      const puedeDejar = await clientePuedeDejearResena(telefonoResena)
+      if (!puedeDejar) {
+        document.getElementById('error-estrellas').textContent = '⚠️ Solo clientes con citas completadas pueden dejar reseñas.'
+        document.getElementById('error-estrellas').style.display = 'block'
+        return
+      }
+    }
+
     const boton = document.getElementById('boton-resena')
     boton.textContent = 'Enviando...'
     boton.disabled = true
     const resultado = await guardarResena({
-      nombre: document.getElementById('resena-nombre').value,
+      nombre: nombreResena,
       estrellas: estrellaSeleccionada,
       comentario: document.getElementById('resena-comentario').value,
       aprobada: false

@@ -102,20 +102,6 @@
   </script>
 </head>
 
-<!-- Banner de notificaciones -->
-<div class="notif-banner" id="notif-banner" style="display:none;">
-  <div class="notif-banner-contenido">
-    <span class="notif-banner-icono">✂️</span>
-    <div class="notif-banner-texto">
-      <p class="notif-banner-titulo">Activa las notificaciones</p>
-      <p class="notif-banner-sub">Entérate cuando llegue una nueva cita</p>
-    </div>
-    <div class="notif-banner-btns">
-      <button class="notif-btn-si" onclick="activarNotificaciones()">Activar</button>
-      <button class="notif-btn-no" onclick="cerrarBannerNotif()">Ahora no</button>
-    </div>
-  </div>
-</div>
 
 <body>
 
@@ -449,6 +435,7 @@
       <button class="admin-tab activo" onclick="cambiarTab('dashboard')">📊 Dashboard</button>
       <button class="admin-tab" onclick="cambiarTab('agenda')">📅 Agenda</button>
       <button class="admin-tab" onclick="cambiarTab('citas')">📋 Citas</button>
+      <button class="admin-tab" onclick="cambiarTab('historial')">📈 Historial</button>
       <button class="admin-tab" onclick="cambiarTab('disponibilidad')">⚙️ Disponibilidad</button>
     </div>
 
@@ -544,6 +531,9 @@
       </div>
       <div id="todas-citas-lista"></div>
     </div>
+
+    <!-- ===== TAB: HISTORIAL ===== -->
+    <div class="admin-contenido" id="tab-historial" style="display:none;"></div>
 
     <!-- ===== TAB: DISPONIBILIDAD ===== -->
     <div class="admin-contenido" id="tab-disponibilidad" style="display:none;"></div>
@@ -734,6 +724,9 @@
       <p class="modal-descripcion" id="confirmacion-detalle"></p>
       <div class="confirmacion-info" id="confirmacion-info"></div>
       <p class="confirmacion-nota">Te redirigiremos a WhatsApp para confirmar con Edwin.</p>
+      <button class="boton-calendario" id="btn-add-calendario" onclick="agregarAlCalendario()">
+        📅 Añadir a mi calendario
+      </button>
       <button class="boton-principal" onclick="cerrarConfirmacion()">Entendido</button>
     </div>
   </div>
