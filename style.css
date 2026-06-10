@@ -2550,6 +2550,9 @@ a.boton-cancelar-admin:hover,
 .historial-citas {
   color: #7fb3d3;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .historial-total {

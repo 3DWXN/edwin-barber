@@ -324,6 +324,7 @@ export async function obtenerHistorialMensual() {
     snapshot.forEach(docSnap => {
       const data = docSnap.data()
       if (!data.fecha || !data.total) return
+      if (data.estado === 'cancelada') return // excluir canceladas
       const mes = data.fecha.substring(0, 7) // "2026-05"
       if (!mapa[mes]) mapa[mes] = { total: 0, citas: 0 }
       mapa[mes].total += data.total

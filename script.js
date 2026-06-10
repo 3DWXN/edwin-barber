@@ -532,9 +532,10 @@ window.generarExcel = async function () {
   // Importar SheetJS dinámicamente
   const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs')
 
-  // ===== HOJA 1: TABLA DE DATOS =====
+  // ===== HOJA 1: TABLA DE DATOS (excluye canceladas) =====
+  const citasValidas = citas.filter(c => c.estado !== 'cancelada')
   const encabezados = ['Fecha', 'Hora', 'Nombre', 'Teléfono', 'Servicio', 'Adiciones', 'Ubicación', 'Total ($)', 'Estado']
-  const filas = citas.map(c => [
+  const filas = citasValidas.map(c => [
     c.fecha ? new Date(c.fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '—',
     c.hora || '—',
     c.nombre || '—',
@@ -546,21 +547,20 @@ window.generarExcel = async function () {
     c.estado || 'pendiente'
   ])
 
-  const totalGeneral = citas.reduce((sum, c) => sum + (c.total || 0), 0)
+  const totalGeneral = citasValidas.reduce((sum, c) => sum + (c.total || 0), 0)
   const filaTotal = ['', '', '', '', '', '', 'TOTAL', totalGeneral, '']
 
   const datosHoja1 = [encabezados, ...filas, [], filaTotal]
   const hoja1 = XLSX.utils.aoa_to_sheet(datosHoja1)
 
-  // Ancho de columnas
   hoja1['!cols'] = [
     { wch: 30 }, { wch: 10 }, { wch: 20 }, { wch: 14 },
     { wch: 22 }, { wch: 30 }, { wch: 18 }, { wch: 12 }, { wch: 12 }
   ]
 
-  // ===== HOJA 2: INGRESOS POR DÍA CON TOTAL Y GUÍA DE GRÁFICA =====
+  // ===== HOJA 2: INGRESOS POR DÍA (excluye canceladas) =====
   const mapaFechas = {}
-  citas.forEach(c => {
+  citasValidas.forEach(c => {
     if (c.fecha) {
       if (!mapaFechas[c.fecha]) mapaFechas[c.fecha] = { citas: 0, total: 0 }
       mapaFechas[c.fecha].citas++
