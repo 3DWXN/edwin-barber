@@ -442,6 +442,21 @@
     <!-- ===== TAB: DASHBOARD ===== -->
     <div class="admin-contenido" id="tab-dashboard">
 
+      <!-- Gráfica de ingresos -->
+      <div class="admin-grafica-card">
+        <div class="admin-grafica-header">
+          <div>
+            <p class="admin-grafica-titulo">Evolución de Ingresos</p>
+            <p class="admin-grafica-sub">Esta semana</p>
+          </div>
+          <div class="admin-grafica-nav">
+            <button class="admin-fecha-btn" onclick="cambiarSemanaGrafica(-1)" title="Semana anterior">‹</button>
+            <button class="admin-fecha-btn" onclick="cambiarSemanaGrafica(1)" title="Semana siguiente">›</button>
+          </div>
+        </div>
+        <div class="admin-grafica" id="admin-grafica"></div>
+      </div>
+
       <!-- Stats del día -->
       <div class="admin-stats-grid">
         <div class="admin-stat-card">
@@ -462,21 +477,6 @@
           </div>
           <p class="admin-stat-sub" id="stat-ingresos-dia">$0 hoy</p>
         </div>
-      </div>
-
-      <!-- Gráfica de ingresos -->
-      <div class="admin-grafica-card">
-        <div class="admin-grafica-header">
-          <div>
-            <p class="admin-grafica-titulo">Evolución de Ingresos</p>
-            <p class="admin-grafica-sub">Esta semana</p>
-          </div>
-          <div class="admin-grafica-nav">
-            <button class="admin-fecha-btn" onclick="cambiarSemanaGrafica(-1)" title="Semana anterior">‹</button>
-            <button class="admin-fecha-btn" onclick="cambiarSemanaGrafica(1)" title="Semana siguiente">›</button>
-          </div>
-        </div>
-        <div class="admin-grafica" id="admin-grafica"></div>
       </div>
 
       <!-- Selector de fecha para el dashboard -->

@@ -2503,10 +2503,18 @@ a.boton-cancelar-admin:hover,
 .historial-grafica {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  justify-content: center;
+  gap: 10px;
   height: 140px;
   padding-top: 8px;
+  padding-bottom: 4px;
   overflow-x: auto;
+}
+
+.historial-grafica .grafica-barra-wrap {
+  flex: 1 0 auto;
+  min-width: 50px;
+  max-width: 90px;
 }
 
 .historial-tabla {
@@ -2527,6 +2535,10 @@ a.boton-cancelar-admin:hover,
   color: #5d8aa8;
   letter-spacing: 2px;
   text-transform: uppercase;
+}
+
+.historial-tabla-header span:nth-child(2) {
+  text-align: center;
 }
 
 .historial-tabla-row {
