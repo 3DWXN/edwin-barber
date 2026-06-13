@@ -371,6 +371,7 @@ window.cerrarPanelAdmin = function () {
   actualizarBadgeSesion()
   document.getElementById('panel-admin').style.display = 'none'
   document.body.style.overflow = ''
+  document.title = 'Edwin Barber — Barbero Profesional en Jamundí, Valle del Cauca'
 }
 
 window.cambiarTab = function (tab) {
@@ -386,6 +387,16 @@ window.cambiarTab = function (tab) {
   if (tab === 'citas') cargarTodasCitas()
   if (tab === 'historial') cargarHistorialMensual()
   if (tab === 'disponibilidad') cargarPanelDisponibilidad()
+
+  // Actualizar título de la pestaña según la sección
+  const nombres = {
+    dashboard: 'Dashboard',
+    agenda: 'Agenda',
+    citas: 'Citas',
+    historial: 'Historial',
+    disponibilidad: 'Disponibilidad'
+  }
+  document.title = `${nombres[tab]} — Edwin Barber`
 }
 
 // ================================================================
@@ -1821,6 +1832,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { threshold: 0.1 })
 
   if (hero) observadorHero.observe(hero)
+
+  // Título dinámico según la sección visible
+  const TITULO_BASE = 'Edwin Barber'
+  const nombresSecciones = {
+    inicio: TITULO_BASE,
+    'sobre-mi': `Sobre Mí — ${TITULO_BASE}`,
+    porque: `Por Qué Elegirnos — ${TITULO_BASE}`,
+    servicios: `Servicios — ${TITULO_BASE}`,
+    adiciones: `Adiciones — ${TITULO_BASE}`,
+    galeria: `Galería — ${TITULO_BASE}`,
+    resenas: `Reseñas — ${TITULO_BASE}`,
+    contacto: `Contacto — ${TITULO_BASE}`
+  }
+  const seccionesIds = Object.keys(nombresSecciones)
+  const observadorTitulo = new IntersectionObserver((entradas) => {
+    entradas.forEach(entrada => {
+      if (entrada.isIntersecting && entrada.intersectionRatio > 0.4) {
+        const id = entrada.target.id
+        if (nombresSecciones[id]) document.title = nombresSecciones[id]
+      }
+    })
+  }, { threshold: [0.4] })
+  seccionesIds.forEach(id => {
+    const el = document.getElementById(id)
+    if (el) observadorTitulo.observe(el)
+  })
 
   // Scroll animaciones
   const observador = new IntersectionObserver((entradas) => {
