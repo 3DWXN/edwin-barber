@@ -248,7 +248,6 @@ window.solicitarCancelacion = function (id, servicio, fechaFmt, hora) {
     `Quedo pendiente para reagendar cuando tengas disponibilidad.`
   const msgTarde = `Hola Edwin, necesito cancelar mi cita de ${servicio} del ${fechaFmt} a las ${hora}, pero ya no me permite hacerlo desde la app. ¿Podemos arreglarlo?`
 
-  // Guardar URL antes del await para Safari
   let urlDestino = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(msg)}`
 
   cancelarCitaCliente(id).then(resultado => {
@@ -257,10 +256,17 @@ window.solicitarCancelacion = function (id, servicio, fechaFmt, hora) {
       urlDestino = `whatsapp://send?phone=573173475482&text=${encodeURIComponent(msgTarde)}`
     }
     if (resultado.exito || resultado.tiempoAgotado) {
-      // Pequeño timeout para que iOS procese el UI primero
-      setTimeout(() => {
-        window.location.href = urlDestino
-      }, 300)
+      // Notificar Telegram como medida de seguridad
+      const msgTelegram =
+        `🚫 *Cita cancelada por el cliente*\n\n` +
+        `👤 *Cliente:* ${nombre}\n` +
+        `📱 *WhatsApp:* ${telefono}\n` +
+        `✂️ *Servicio:* ${servicio}\n` +
+        `📅 *Fecha:* ${fechaFmt}\n` +
+        `🕐 *Hora:* ${hora}\n\n` +
+        `⚠️ El slot de las ${hora} ha quedado disponible.`
+      notificarTelegram({ _textoPersonalizado: msgTelegram })
+      setTimeout(() => { window.location.href = urlDestino }, 300)
     } else {
       alert('Hubo un error al cancelar. Intenta de nuevo.')
     }
@@ -1556,28 +1562,28 @@ const TG_CHAT  = '5886411813'
 
 async function notificarTelegram (datos) {
   try {
-    const fechaFmt = datos.fecha
-      ? new Date(datos.fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
-      : '—'
-    const texto =
-      `✂️ *Nueva cita — Edwin Barber*\n\n` +
-      `👤 *Cliente:* ${datos.nombre}\n` +
-      `📱 *WhatsApp:* ${datos.telefono}\n` +
-      `✂️ *Servicio:* ${datos.servicio}\n` +
-      `${datos.adiciones && datos.adiciones.length ? `➕ *Adiciones:* ${datos.adiciones.join(', ')}\n` : ''}` +
-      `📍 *Ubicación:* ${datos.ubicacion}\n` +
-      `📅 *Fecha:* ${fechaFmt}\n` +
-      `🕐 *Hora:* ${datos.hora}\n` +
-      `💰 *Total:* $${(datos.total || 0).toLocaleString()}`
-
+    let texto
+    if (datos._textoPersonalizado) {
+      texto = datos._textoPersonalizado
+    } else {
+      const fechaFmt = datos.fecha
+        ? new Date(datos.fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
+        : '—'
+      texto =
+        `✂️ *Nueva cita — Edwin Barber*\n\n` +
+        `👤 *Cliente:* ${datos.nombre}\n` +
+        `📱 *WhatsApp:* ${datos.telefono}\n` +
+        `✂️ *Servicio:* ${datos.servicio}\n` +
+        `${datos.adiciones && datos.adiciones.length ? `➕ *Adiciones:* ${datos.adiciones.join(', ')}\n` : ''}` +
+        `📍 *Ubicación:* ${datos.ubicacion}\n` +
+        `📅 *Fecha:* ${fechaFmt}\n` +
+        `🕐 *Hora:* ${datos.hora}\n` +
+        `💰 *Total:* $${(datos.total || 0).toLocaleString()}`
+    }
     await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TG_CHAT,
-        text: texto,
-        parse_mode: 'Markdown'
-      })
+      body: JSON.stringify({ chat_id: TG_CHAT, text: texto, parse_mode: 'Markdown' })
     })
   } catch (e) {
     console.error('Error Telegram:', e)
@@ -1601,19 +1607,55 @@ window.agregarAlCalendario = function () {
 
   const inicio = new Date(fecha + 'T00:00:00')
   inicio.setHours(h, m, 0, 0)
-  const fin = new Date(inicio.getTime() + 40 * 60000) // 40 min después
+  const fin = new Date(inicio.getTime() + 40 * 60000)
 
-  const fmt = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+  const fmt = d => d.toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z'
+  const uid = `edwinbarber-${fecha}-${hora.replace(/[: ]/g, '')}`
 
-  // Intentar Google Calendar primero (funciona en todos)
-  const urlGoogle =
-    `https://calendar.google.com/calendar/render?action=TEMPLATE` +
-    `&text=${encodeURIComponent(`✂️ Cita Edwin Barber — ${servicio}`)}` +
-    `&dates=${fmt(inicio)}/${fmt(fin)}` +
-    `&details=${encodeURIComponent(`Cita de ${nombre} para ${servicio} en Edwin Barber`)}` +
-    `&location=${encodeURIComponent('Edwin Barber, Jamundí, Valle del Cauca')}`
+  const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  const esMac = /macintosh/i.test(navigator.userAgent)
 
-  window.open(urlGoogle, '_blank')
+  if (esIOS || esMac) {
+    // iPhone/iPad/Mac → archivo .ics que abre Calendario nativo
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Edwin Barber//ES',
+      'CALSCALE:GREGORIAN',
+      'BEGIN:VEVENT',
+      `UID:${uid}@edwinbarber`,
+      `DTSTART:${fmt(inicio)}`,
+      `DTEND:${fmt(fin)}`,
+      `SUMMARY:✂️ Cita Edwin Barber — ${servicio}`,
+      `DESCRIPTION:Cita de ${nombre} para ${servicio}\\nEdwin Barber\\nJamundí\\nWhatsApp: 3173475482`,
+      'LOCATION:Edwin Barber\\, Jamundí\\, Valle del Cauca',
+      'BEGIN:VALARM',
+      'TRIGGER:-PT60M',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Recuerda tu cita con Edwin Barber en 1 hora ✂️',
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n')
+
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `cita-edwinbarber-${fecha}.ics`
+    document.body.appendChild(a)
+    a.click()
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url) }, 300)
+  } else {
+    // Android / PC → Google Calendar
+    const urlGoogle =
+      `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+      `&text=${encodeURIComponent(`✂️ Cita Edwin Barber — ${servicio}`)}` +
+      `&dates=${fmt(inicio)}/${fmt(fin)}` +
+      `&details=${encodeURIComponent(`Cita de ${nombre} para ${servicio} en Edwin Barber`)}` +
+      `&location=${encodeURIComponent('Edwin Barber, Jamundí, Valle del Cauca')}`
+    window.open(urlGoogle, '_blank')
+  }
 }
 
 // ================================================================
