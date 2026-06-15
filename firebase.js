@@ -98,7 +98,13 @@ export async function obtenerHorasOcupadas(fecha) {
     const q = query(collection(db, "citas"), where("fecha", "==", fecha))
     const snapshot = await getDocs(q)
     const horas = []
-    snapshot.forEach(doc => horas.push(doc.data().hora))
+    snapshot.forEach(doc => {
+      const data = doc.data()
+      // Solo marcar como ocupada si NO está cancelada
+      if (data.estado !== 'cancelada') {
+        horas.push(data.hora)
+      }
+    })
     return horas
   } catch (error) {
     return []
@@ -136,11 +142,21 @@ export async function obtenerTodasLasCitas() {
     const snapshot = await getDocs(collection(db, "citas"))
     const citas = []
     snapshot.forEach(doc => citas.push({ id: doc.id, ...doc.data() }))
+
+    function horaAMinutos(hora) {
+      if (!hora) return 0
+      const [horaStr, periodo] = hora.split(' ')
+      let [h, m] = horaStr.split(':').map(Number)
+      if (periodo === 'PM' && h !== 12) h += 12
+      if (periodo === 'AM' && h === 12) h = 0
+      return h * 60 + m
+    }
+
     citas.sort((a, b) => {
       if (!a.fecha || !b.fecha) return 0
       const fechaComp = b.fecha.localeCompare(a.fecha)
       if (fechaComp !== 0) return fechaComp
-      return (a.hora || '').localeCompare(b.hora || '')
+      return horaAMinutos(a.hora) - horaAMinutos(b.hora)
     })
     return citas
   } catch (error) {

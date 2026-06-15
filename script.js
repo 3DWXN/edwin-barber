@@ -274,7 +274,19 @@ window.solicitarCancelacion = function (id, servicio, fechaFmt, hora) {
 }
 
 // ================================================================
-// CANCELACIÓN DESDE ADMIN — WhatsApp al cliente
+// CANCELAR DESDE AGENDA — actualiza Firebase y abre WhatsApp
+// ================================================================
+window.cancelarDesdeAgenda = function (id, urlWA) {
+  // Actualizar Firebase en segundo plano
+  actualizarEstadoCita(id, 'cancelada').then(r => {
+    if (r.exito) setTimeout(() => cargarAgenda(), 1500)
+  })
+  // Abrir WhatsApp sincrónicamente
+  window.location.href = urlWA
+}
+
+// ================================================================
+// CANCELACIÓN DESDE ADMIN — WhatsApp al cliente (desde listado)
 // ================================================================
 window.cancelarDesdeAdmin = function (id, nombre, servicio, fechaFmt, hora, telefono) {
   const confirmar = confirm(`¿Cancelar la cita de ${nombre}?\n\n✂️ ${servicio}\n📅 ${fechaFmt}\n🕐 ${hora}`)
@@ -708,10 +720,10 @@ async function cargarAgenda () {
           </div>
           <p style="font-size:11px;color:#5d8aa8;margin-top:4px;">📱 ${cita.telefono || '—'}</p>
           ${cita.estado !== 'cancelada' && cita.estado !== 'completada' ? `
-            <a class="boton-cancelar-admin" href="${urlCancelar}"
-              onclick="actualizarEstadoCita('${cita.id}','cancelada').then(()=>setTimeout(()=>cargarAgenda(),1000))">
+            <button class="boton-cancelar-admin"
+              onclick="cancelarDesdeAgenda('${cita.id}', '${urlCancelar}')">
               ✕ Cancelar y notificar cliente
-            </a>
+            </button>
           ` : ''}
         </div>
       `
