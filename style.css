@@ -559,32 +559,38 @@ body {
 /* ===== ADICIONES SECCIÓN ===== */
 .adiciones { padding: 0 20px 80px; }
 
-/* ===== GALERÍA ===== */
-.galeria { background-color: #0a1520; }
+/* ===== GALERÍA INSTAGRAM ===== */
+.galeria {
+  padding: 80px 20px;
+  background-color: #0a1520;
+}
 
-.galeria-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+.galeria-ig-label {
+  text-align: center;
+  font-size: 13px;
+  color: #5d8aa8;
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+
+.galeria-ig-link {
+  color: #2471a3;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.galeria-ig-link:hover { color: #7fb3d3; }
+
+.galeria-ig-wrap {
   max-width: 900px;
   margin: 0 auto;
 }
 
-.galeria-item {
-  border-radius: 8px;
-  overflow: hidden;
-  aspect-ratio: 1;
-  background-color: #0c1a28;
+/* Forzar fondo transparente al widget de Behold */
+behold-widget {
+  --behold-background: transparent;
 }
-
-.galeria-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s ease;
-}
-
-.galeria-item:active img { transform: scale(1.05); }
 
 /* ===== RESEÑAS ===== */
 .resenas {
