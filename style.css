@@ -11,13 +11,13 @@ html {
 
 body {
   background-color: #0c1a28;
-  background-image: 
-    linear-gradient(rgba(12, 26, 40, 0.975), rgba(12, 26, 40, 0.975)),
-    url('images/logofondo.png');
-  background-position: 0 0, 0 0;
-  background-size: auto, 160px 160px;
+  background-image:
+    linear-gradient(rgba(12, 26, 40, 0.86), rgba(12, 26, 40, 0.86)),
+    url('images/pattern.svg');
+  background-position: 0 0;
+  background-size: 130px 130px;
   background-repeat: repeat;
-  background-attachment: fixed;
+  background-attachment: scroll;
   color: #d6eaf8;
   font-family: 'Barlow', sans-serif;
   overflow-x: hidden;
@@ -2813,6 +2813,9 @@ a.boton-cancelar-admin:hover,
 
 /* ===== RESPONSIVE ===== */
 @media (min-width: 600px) {
+  body {
+    background-size: 150px 150px;
+  }
   .sobre-mi-contenido {
     flex-direction: row;
     align-items: center;
