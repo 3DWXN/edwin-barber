@@ -28,6 +28,7 @@ let fechaDash = new Date()     // fecha activa en dashboard
 let fechaAgenda = new Date()   // fecha activa en agenda
 let todasCitas = []            // cache de citas para el tab de todas
 let offsetSemana = 0           // 0=semana actual, -1=anterior, +1=siguiente
+let limitCitasVisibles = 30    // cantidad de citas a mostrar en el panel (paginación)
 
 // ===== DATOS SERVICIOS =====
 const servicios = {
@@ -826,9 +827,13 @@ async function cargarTodasCitas () {
   const lista = document.getElementById('todas-citas-lista')
   lista.innerHTML = '<p class="cargando">Cargando citas...</p>'
   todasCitas = await obtenerTodasLasCitas()
+  limitCitasVisibles = 30
   renderTodasCitas()
 
-  document.getElementById('filtro-estado').onchange = renderTodasCitas
+  document.getElementById('filtro-estado').onchange = () => {
+    limitCitasVisibles = 30
+    renderTodasCitas()
+  }
 }
 
 function renderTodasCitas () {
@@ -842,7 +847,9 @@ function renderTodasCitas () {
   }
 
   lista.innerHTML = ''
-  filtradas.forEach(c => {
+  const citasAmostrar = filtradas.slice(0, limitCitasVisibles)
+
+  citasAmostrar.forEach(c => {
     const fechaFmt = c.fecha
       ? new Date(c.fecha + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
       : '—'
@@ -871,6 +878,20 @@ function renderTodasCitas () {
     `
     lista.appendChild(card)
   })
+
+  if (filtradas.length > limitCitasVisibles) {
+    const btnVerMas = document.createElement('button')
+    btnVerMas.className = 'boton-principal'
+    btnVerMas.style.margin = '20px auto 10px auto'
+    btnVerMas.style.display = 'block'
+    btnVerMas.style.maxWidth = '200px'
+    btnVerMas.textContent = 'Ver más citas'
+    btnVerMas.onclick = () => {
+      limitCitasVisibles += 30
+      renderTodasCitas()
+    }
+    lista.appendChild(btnVerMas)
+  }
 }
 
 window.cambiarEstadoListado = function (select, id, nombre, servicio, telefono, fecha, hora) {

@@ -11,6 +11,13 @@ html {
 
 body {
   background-color: #0c1a28;
+  background-image: 
+    linear-gradient(rgba(12, 26, 40, 0.975), rgba(12, 26, 40, 0.975)),
+    url('images/logofondo.png');
+  background-position: 0 0, 0 0;
+  background-size: auto, 160px 160px;
+  background-repeat: repeat;
+  background-attachment: fixed;
   color: #d6eaf8;
   font-family: 'Barlow', sans-serif;
   overflow-x: hidden;
@@ -55,9 +62,9 @@ body {
 
 /* Brillo deslizante reutilizable */
 @keyframes brillo-slide {
-  0%   { left: -75%; }
-  60%  { left: 125%; }
-  100% { left: 125%; }
+  0%   { transform: translateX(0%) skewX(-20deg); }
+  60%  { transform: translateX(400%) skewX(-20deg); }
+  100% { transform: translateX(400%) skewX(-20deg); }
 }
 
 .revelar {
@@ -400,7 +407,7 @@ body {
 /* ===== POR QUÉ ===== */
 .porque {
   padding: 80px 20px;
-  background-color: #0a1520;
+  background-color: transparent;
 }
 
 .porque-grid {
@@ -562,7 +569,7 @@ body {
 /* ===== GALERÍA INSTAGRAM ===== */
 .galeria {
   padding: 80px 20px;
-  background-color: #0a1520;
+  background-color: transparent;
 }
 
 .galeria-ig-label {
@@ -595,7 +602,7 @@ behold-widget {
 /* ===== RESEÑAS ===== */
 .resenas {
   padding: 80px 20px;
-  background-color: #0a1520;
+  background-color: transparent;
 }
 
 .resenas-resumen {
@@ -784,7 +791,7 @@ behold-widget {
 
 /* ===== FOOTER ===== */
 .footer {
-  background-color: #0a1520;
+  background-color: transparent;
   border-top: 1px solid #1e3a52;
   text-align: center;
   padding: 24px 20px;
@@ -2448,9 +2455,9 @@ a.boton-cancelar-admin:hover,
 }
 
 @keyframes brillo-excel {
-  0%   { left: -75%; }
-  60%  { left: 125%; }
-  100% { left: 125%; }
+  0%   { transform: translateX(0%) skewX(-20deg); }
+  60%  { transform: translateX(400%) skewX(-20deg); }
+  100% { transform: translateX(400%) skewX(-20deg); }
 }
 
 .boton-excel:hover {

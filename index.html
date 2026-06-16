@@ -72,6 +72,8 @@
   }
   </script>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;600&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 
@@ -90,6 +92,20 @@
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/edwin-barber/sw.js')
           .then(reg => {
+            // Forzar comprobación de actualizaciones del Service Worker al cargar la página
+            reg.update()
+
+            // Detectar si hay una nueva versión del Service Worker instalada
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // Se activa automáticamente y recarga la página para refrescar la caché
+                  window.location.reload()
+                }
+              })
+            })
+
             navigator.serviceWorker.addEventListener('message', e => {
               if (e.data && e.data.tipo === 'abrir-admin') {
                 if (typeof abrirPanelAdmin === 'function') abrirPanelAdmin()
@@ -349,7 +365,7 @@
 
   <!-- FOOTER -->
   <footer class="footer">
-    <p>© 2025 Edwin Barber · Todos los derechos reservados</p>
+    <p>© 2026 Edwin Barber · Todos los derechos reservados</p>
     <p class="footer-sub">Calidad · Estilo · Precisión</p>
     <button class="footer-compartir" onclick="compartirPagina()">
       📲 Compartir esta página

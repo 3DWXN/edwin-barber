@@ -207,7 +207,14 @@ export async function obtenerIngresosSemana(offset = 0) {
       })
     }
 
-    const snapshot = await getDocs(collection(db, "citas"))
+    const fechaMin = dias[0].fecha
+    const fechaMax = dias[6].fecha
+    const q = query(
+      collection(db, "citas"),
+      where("fecha", ">=", fechaMin),
+      where("fecha", "<=", fechaMax)
+    )
+    const snapshot = await getDocs(q)
     snapshot.forEach(docSnap => {
       const data = docSnap.data()
       const entrada = dias.find(d => d.fecha === data.fecha)
@@ -230,13 +237,15 @@ export async function obtenerIngresosSemana(offset = 0) {
 // ================================================================
 export async function obtenerCitasPorRango(fechaInicio, fechaFin) {
   try {
-    const snapshot = await getDocs(collection(db, "citas"))
+    const q = query(
+      collection(db, "citas"),
+      where("fecha", ">=", fechaInicio),
+      where("fecha", "<=", fechaFin)
+    )
+    const snapshot = await getDocs(q)
     const citas = []
     snapshot.forEach(docSnap => {
-      const data = docSnap.data()
-      if (data.fecha && data.fecha >= fechaInicio && data.fecha <= fechaFin) {
-        citas.push({ id: docSnap.id, ...data })
-      }
+      citas.push({ id: docSnap.id, ...docSnap.data() })
     })
     citas.sort((a, b) => {
       const fechaComp = a.fecha.localeCompare(b.fecha)
